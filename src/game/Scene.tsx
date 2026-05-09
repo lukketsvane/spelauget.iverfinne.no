@@ -6,10 +6,16 @@ import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import Character from './Character';
 import Ground from './Ground';
+import Plants from './Plants';
 import { CAMERA } from './config';
+
+// Direction the key light points (toward the ground from above-right).
+const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 
 export default function Scene() {
   const camRef = useRef<THREE.OrthographicCamera>(null);
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+  const lightTargetRef = useRef<THREE.Object3D>(new THREE.Object3D());
   const target = useRef(new THREE.Vector3());
   const { size } = useThree();
 
@@ -17,18 +23,32 @@ export default function Scene() {
   const characterPos = useRef(new THREE.Vector3());
 
   useFrame(() => {
-    const cam = camRef.current;
-    if (!cam) return;
     target.current.lerp(characterPos.current, CAMERA.followLerp);
-    cam.position.set(
-      target.current.x + CAMERA.offset.x,
-      target.current.y + CAMERA.offset.y,
-      target.current.z + CAMERA.offset.z,
-    );
-    cam.lookAt(target.current);
+
+    const cam = camRef.current;
+    if (cam) {
+      cam.position.set(
+        target.current.x + CAMERA.offset.x,
+        target.current.y + CAMERA.offset.y,
+        target.current.z + CAMERA.offset.z,
+      );
+      cam.lookAt(target.current);
+    }
+
+    // Make the shadow-casting light follow the player. Shadow map covers a
+    // small area at high res, so it must travel with the action.
+    const light = lightRef.current;
+    if (light) {
+      light.position.set(
+        target.current.x + LIGHT_OFFSET.x,
+        target.current.y + LIGHT_OFFSET.y,
+        target.current.z + LIGHT_OFFSET.z,
+      );
+      lightTargetRef.current.position.copy(target.current);
+      lightTargetRef.current.updateMatrixWorld();
+    }
   });
 
-  // Ortho frustum sized for a comfortable iso view; scale by viewport aspect.
   const aspect = size.width / size.height;
   const viewSize = CAMERA.viewSize;
 
@@ -46,26 +66,30 @@ export default function Scene() {
         position={[CAMERA.offset.x, CAMERA.offset.y, CAMERA.offset.z]}
       />
 
-      {/* Bright ambient + a key light from above-right that casts a hard shadow.
-          Keeping ambient strong is what gives the "white room with one cast shadow" look. */}
+      {/* Bright ambient gives the "paper white" look; one directional key
+          provides the single hard cast shadow seen in the reference art. */}
       <ambientLight intensity={1.1} />
       <hemisphereLight args={['#ffffff', '#e6e6e6', 0.4]} />
       <directionalLight
-        position={[8, 14, 6]}
+        ref={lightRef}
+        position={[LIGHT_OFFSET.x, LIGHT_OFFSET.y, LIGHT_OFFSET.z]}
         intensity={1.4}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
+        shadow-camera-left={-18}
+        shadow-camera-right={18}
+        shadow-camera-top={18}
+        shadow-camera-bottom={-18}
         shadow-camera-near={0.1}
-        shadow-camera-far={50}
+        shadow-camera-far={60}
         shadow-bias={-0.0005}
+        target={lightTargetRef.current}
       />
+      <primitive object={lightTargetRef.current} />
 
       <Ground />
+      <Plants />
       <Character positionRef={characterPos} />
     </>
   );
