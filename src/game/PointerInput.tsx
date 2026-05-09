@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { useInput } from '@/store/input';
 
@@ -23,8 +23,6 @@ type DragState = {
 
 export default function PointerInput() {
   const dragRef = useRef<DragState | null>(null);
-  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
-  const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
@@ -51,7 +49,6 @@ export default function PointerInput() {
     // the tap window.
     if (!d.isDrag && (dist > TAP_MAX_PX || performance.now() - d.startTime > TAP_MAX_MS)) {
       d.isDrag = true;
-      setOrigin({ x: d.startX, y: d.startY });
       useInput.getState().clearDestination();
     }
 
@@ -63,7 +60,6 @@ export default function PointerInput() {
         kx = (kx / km) * KNOB_RADIUS;
         ky = (ky / km) * KNOB_RADIUS;
       }
-      setKnob({ x: kx, y: ky });
       useInput.getState().setMove(kx / KNOB_RADIUS, -ky / KNOB_RADIUS);
     }
   };
@@ -92,11 +88,12 @@ export default function PointerInput() {
       useInput.getState().setMove(0, 0);
     }
 
-    setOrigin(null);
-    setKnob({ x: 0, y: 0 });
     dragRef.current = null;
   };
 
+  // Invisible full-screen overlay that captures pointer events. No visual
+  // joystick — the drag-to-move feel is intuitive enough on its own, and
+  // the empty white scene reads cleaner without UI chrome.
   return (
     <div
       className="absolute inset-0 z-10"
@@ -105,29 +102,6 @@ export default function PointerInput() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-    >
-      {origin && (
-        <>
-          <div
-            className="absolute rounded-full border-2 border-neutral-400/60 bg-white/30 backdrop-blur-sm"
-            style={{
-              width: KNOB_RADIUS * 2,
-              height: KNOB_RADIUS * 2,
-              left: origin.x - KNOB_RADIUS,
-              top: origin.y - KNOB_RADIUS,
-            }}
-          />
-          <div
-            className="absolute rounded-full bg-neutral-700/70"
-            style={{
-              width: KNOB_RADIUS,
-              height: KNOB_RADIUS,
-              left: origin.x - KNOB_RADIUS / 2 + knob.x,
-              top: origin.y - KNOB_RADIUS / 2 + knob.y,
-            }}
-          />
-        </>
-      )}
-    </div>
+    />
   );
 }
