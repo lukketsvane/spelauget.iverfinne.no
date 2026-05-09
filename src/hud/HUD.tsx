@@ -4,21 +4,17 @@ import { useGame } from '@/store/game';
 
 export default function HUD() {
   const hearts = useGame((s) => s.hearts);
-  const coins = useGame((s) => s.coins);
   const xp = useGame((s) => s.xp);
   const xpToNext = useGame((s) => s.xpToNext);
 
   return (
     <div className="pointer-events-none absolute inset-0 select-none">
-      {/* Top-left: hearts + coins */}
+      {/* Top-left: hearts */}
       <div className="absolute left-4 top-4 flex flex-col gap-2 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
         <div className="flex gap-1.5">
           {Array.from({ length: 3 }, (_, i) => (
             <Heart key={i} filled={i < hearts} />
           ))}
-        </div>
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <Coin /> <span>x {coins}</span>
         </div>
       </div>
 
@@ -47,25 +43,6 @@ function Heart({ filled }: { filled: boolean }) {
         stroke="#7f1d1d"
         strokeWidth="1.5"
       />
-    </svg>
-  );
-}
-
-function Coin() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="12" r="9" fill="#fbbf24" stroke="#a16207" strokeWidth="1.5" />
-      <text
-        x="12"
-        y="16"
-        textAnchor="middle"
-        fontSize="11"
-        fontWeight="700"
-        fill="#78350f"
-        fontFamily="serif"
-      >
-        ¢
-      </text>
     </svg>
   );
 }

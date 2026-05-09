@@ -165,11 +165,44 @@ export default function StarNpc({ playerPosRef }: Props) {
     return unsub;
   }, [clips, playerPosRef]);
 
-  // -- Face the player while rising / standing ---------------------------
+  // -- Dialogue end → calm idle facing the player -----------------------
+  useEffect(() => {
+    let wasActive = useDialogue.getState().active;
+    const unsub = useDialogue.subscribe((s) => {
+      if (s.active === wasActive) return;
+      wasActive = s.active;
+      if (s.active) return;
+      if (phaseRef.current !== 'standing') return;
+      if (!clips) return;
+      // Stop the dance, fade into a peaceful idle loop.
+      clips.gestureA?.fadeOut(FADE * 2);
+      clips.gestureB?.fadeOut(FADE * 2);
+      const idle = clips.idle;
+      if (idle) {
+        idle.setLoop(THREE.LoopRepeat, Infinity);
+        idle.timeScale = 1.0;
+        idle.reset().fadeIn(FADE * 2).play();
+      }
+      setPhase('idle');
+    });
+    return unsub;
+  }, [clips]);
+
+  // -- Face the player + interaction proximity + safety net --------------
   const facingTargetYaw = useRef<number | null>(null);
   useFrame((_, dt) => {
     const g = group.current;
-    if (g && facingTargetYaw.current !== null) {
+    if (!g) return;
+
+    // Continuous facing tracking after the conversation: NPC slowly
+    // looks at the player wherever they go.
+    if (phaseRef.current === 'idle') {
+      const dx = playerPosRef.current.x - g.position.x;
+      const dz = playerPosRef.current.z - g.position.z;
+      facingTargetYaw.current = Math.atan2(dx, dz) - Math.PI / 2;
+    }
+
+    if (facingTargetYaw.current !== null) {
       const target = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
         facingTargetYaw.current,
@@ -177,10 +210,20 @@ export default function StarNpc({ playerPosRef }: Props) {
       g.quaternion.rotateTowards(target, dt * 4);
     }
 
+    // Tell the HUD when the player is in range of the bow trigger.
+    // Only relevant in slumped phase — the button is a one-shot wake.
+    const dx = playerPosRef.current.x - g.position.x;
+    const dz = playerPosRef.current.z - g.position.z;
+    const inRange =
+      phaseRef.current === 'slumped' && Math.hypot(dx, dz) < TRIGGER_DISTANCE;
+    const cur = useInteraction.getState();
+    if (cur.available !== inRange) {
+      useInteraction.getState().setAvailable(inRange, inRange ? 'Bukk for å hilse' : null);
+    }
+
     // Safety net: if no clip has any weight on the bones, the character
     // would render in bind pose (T-pose). Restart whatever pose belongs
-    // to the current phase. Catches missed `finished` events, reset
-    // edge cases, paused tabs, etc.
+    // to the current phase.
     if (clips) {
       const phase = phaseRef.current;
       const desired =
@@ -188,19 +231,28 @@ export default function StarNpc({ playerPosRef }: Props) {
           ? clips.slumped
           : phase === 'standing'
             ? clips.gestureA ?? clips.gestureB ?? clips.idle
-            : null; // 'rising' is one-shot, leave alone
+            : phase === 'idle'
+              ? clips.idle
+              : null; // 'rising' is one-shot, leave alone
       if (desired && desired.getEffectiveWeight() < 0.01) {
-        if (phase === 'slumped') {
-          desired.setLoop(THREE.LoopRepeat, Infinity);
-        } else {
+        if (phase === 'standing') {
           desired.setLoop(THREE.LoopOnce, 1);
           desired.clampWhenFinished = true;
           desired.timeScale = GESTURE_TIMESCALE;
+        } else {
+          desired.setLoop(THREE.LoopRepeat, Infinity);
+          desired.timeScale = 1.0;
         }
         desired.reset().fadeIn(FADE).play();
       }
     }
   });
+
+  // Clear the interaction prompt when the NPC unmounts so the button
+  // doesn't stay stuck-on if the player navigates away.
+  useEffect(() => {
+    return () => useInteraction.getState().setAvailable(false, null);
+  }, []);
 
   // -- Foot lift so feet rest on y=0 in the slumped pose -----------------
   // Skinned-mesh bbox depends on the current pose; computing once on

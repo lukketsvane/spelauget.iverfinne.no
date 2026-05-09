@@ -9,6 +9,7 @@ import EmoteButton from '@/hud/EmoteButton';
 import Dialogue from '@/hud/Dialogue';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
+import ServiceWorker from './ServiceWorker';
 
 export default function Game() {
   return (
@@ -40,6 +41,7 @@ export default function Game() {
       <PointerInput />
       <EmoteButton />
       <Dialogue />
+      <ServiceWorker />
     </>
   );
 }
