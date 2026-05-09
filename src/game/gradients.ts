@@ -127,13 +127,13 @@ export function applyGradientMap(material: THREE.Material, gradient: THREE.Textu
 
 // --- Curated gradient ramps for the moody bioluminescent look ----------
 
-// Ground is muted but never sinks to black — even at the darkest part of
-// the day cycle there's enough luminance to see footing and shadows.
+// Ground is bright enough that the tile pattern is always readable, even
+// at the darkest part of the day cycle and inside cast shadows.
 export const GROUND_GRADIENT: Stop[] = [
-  [0.0, '#241540'],
-  [0.35, '#473466'],
-  [0.7, '#7a608f'],
-  [1.0, '#b9a3cf'],
+  [0.0, '#6b4f95'],
+  [0.35, '#9075b0'],
+  [0.7, '#b9a0d2'],
+  [1.0, '#e8d5f0'],
 ];
 
 // Plants get a vibrant ramp: deep indigo body → magenta mids → near-white

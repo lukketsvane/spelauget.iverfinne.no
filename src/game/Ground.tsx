@@ -24,12 +24,19 @@ export default function Ground() {
     tex.needsUpdate = true;
   }, [tex]);
 
-  // Lambert is shaded by the directional light, so cast shadows visibly
-  // darken the surface; gradient remap then tones the whole thing into
-  // deep night-purple regardless of the source PNG's grey midtones.
+  // Lambert + an emissive component drives most of the brightness so the
+  // gradient-tinted tile reads as terrain even in cast shadows or at the
+  // darkest part of the day cycle. emissiveMap = same texture so the
+  // pattern still pulses with the gradient remap.
   const gradientTex = useMemo(() => makeGradientTexture(GROUND_GRADIENT), []);
   const material = useMemo(() => {
-    const m = new THREE.MeshLambertMaterial({ map: tex, color: '#ffffff' });
+    const m = new THREE.MeshLambertMaterial({
+      map: tex,
+      color: '#ffffff',
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0.55,
+      emissiveMap: tex,
+    });
     applyGradientMap(m, gradientTex);
     return m;
   }, [tex, gradientTex]);
