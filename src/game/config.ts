@@ -21,10 +21,11 @@ export const CHARACTER = {
   fadeSeconds: 0.18,
   // Visual scale applied to the GLB.
   scale: 2.0,
-  // Radians added to the move-direction yaw to compensate for the GLB's
-  // local "forward" axis. Most rigged characters have local -Z forward, so
-  // π is a common starting value. Try 0, π, ±π/2 if facing is off.
-  modelForwardYaw: Math.PI,
+  // Radians added to move-direction yaw to compensate for the GLB's local
+  // forward axis. Sligo (Tripo export) faces local +X in bind pose, so we
+  // rotate -π/2 to align with three.js convention. Try 0, π, ±π/2 if a
+  // future model points in another direction.
+  modelForwardYaw: -Math.PI / 2,
 } as const;
 
 // Animation roles are picked at runtime by clip duration in Character.tsx:
@@ -36,7 +37,7 @@ export const CHARACTER = {
 // name-based mapping isn't portable. Character.tsx logs the resolved
 // mapping on mount — open devtools console to see it.
 
-export const PLAYER_MODEL_URL = '/models/sligo.glb';
+export const PLAYER_MODEL_URL = '/models/sligo_01.glb';
 
 // How long the character must stay idle before a random emote fires, in
 // seconds. Picks uniformly inside the range each time.

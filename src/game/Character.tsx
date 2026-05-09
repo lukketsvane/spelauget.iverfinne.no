@@ -38,7 +38,10 @@ export default function Character({ positionRef }: Props) {
     walk: null,
     run: null,
   });
-  const extraAction = useRef<THREE.AnimationAction | null>(null);
+  // Pool of one-shot emote clips (everything that isn't run / walk / idle).
+  // We pick one at random per emote firing for visual variety.
+  const emotePool = useRef<THREE.AnimationAction[]>([]);
+  const activeEmote = useRef<THREE.AnimationAction | null>(null);
   const currentRole = useRef<Role>('idle');
   const isPlayingExtra = useRef(false);
 
@@ -54,35 +57,39 @@ export default function Character({ positionRef }: Props) {
       .map((n) => ({ name: n, dur: actions[n]?.getClip().duration ?? 0 }))
       .sort((a, b) => a.dur - b.dur);
 
-    // shortest=run, 2nd=walk, longest=idle, the remaining one is "extra".
+    // shortest=run, 2nd=walk, longest=idle, everything else = emote pool.
     const run = byDuration[0]?.name ?? names[0];
     const walk = byDuration[1]?.name ?? run;
     const idle = byDuration[byDuration.length - 1]?.name ?? run;
-    const extra = byDuration.find((c) => c.name !== run && c.name !== walk && c.name !== idle)?.name;
+    const emoteNames = byDuration
+      .map((c) => c.name)
+      .filter((n) => n !== run && n !== walk && n !== idle);
 
     clipsByRole.current = {
       run: actions[run] ?? null,
       walk: actions[walk] ?? null,
       idle: actions[idle] ?? actions[names[0]] ?? null,
     };
-    extraAction.current = extra ? actions[extra] ?? null : null;
+    emotePool.current = emoteNames
+      .map((n) => actions[n])
+      .filter((a): a is THREE.AnimationAction => a != null);
 
     if (process.env.NODE_ENV !== 'production') {
       // eslint-disable-next-line no-console
       console.log(
         '[Character] clips:',
         byDuration.map((c) => `${c.name}=${c.dur.toFixed(2)}s`).join(', '),
-        '→ idle:', idle, 'walk:', walk, 'run:', run, 'extra:', extra,
+        '→ idle:', idle, 'walk:', walk, 'run:', run, 'emotes:', emoteNames,
       );
     }
 
-    // Looping for movement clips; one-shot for the emote.
+    // Looping for movement clips; one-shot for emotes.
     for (const role of ['idle', 'walk', 'run'] as const) {
       clipsByRole.current[role]?.setLoop(THREE.LoopRepeat, Infinity);
     }
-    if (extraAction.current) {
-      extraAction.current.setLoop(THREE.LoopOnce, 1);
-      extraAction.current.clampWhenFinished = true;
+    for (const emote of emotePool.current) {
+      emote.setLoop(THREE.LoopOnce, 1);
+      emote.clampWhenFinished = true;
     }
 
     const idleAction = clipsByRole.current.idle;
@@ -96,31 +103,32 @@ export default function Character({ positionRef }: Props) {
     };
   }, [actions, names]);
 
-  // -- Emote: fade idle out, fire one-shot, fade idle back in -------------
+  // -- Emote: fade idle out, fire a random one-shot, fade idle back in ----
   const playEmote = useMemo(() => {
     return () => {
-      const extra = extraAction.current;
+      const pool = emotePool.current;
       const idle = clipsByRole.current.idle;
-      if (!extra) return;
-      // Don't stack emotes; only allowed while standing still.
+      if (!pool.length) return;
       if (isPlayingExtra.current) return;
       if (currentRole.current !== 'idle') return;
 
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      activeEmote.current = pick;
       isPlayingExtra.current = true;
       idle?.fadeOut(CHARACTER.fadeSeconds * 0.6);
-      extra.reset().fadeIn(CHARACTER.fadeSeconds * 0.6).play();
+      pick.reset().fadeIn(CHARACTER.fadeSeconds * 0.6).play();
     };
   }, []);
 
-  // Mixer's "finished" event: the emote ended → cross-fade back to idle.
+  // Mixer's "finished" event: an emote ended → cross-fade back to idle.
   useEffect(() => {
     const onFinished = (e: { action: THREE.AnimationAction }) => {
-      if (e.action !== extraAction.current) return;
+      if (e.action !== activeEmote.current) return;
       const idle = clipsByRole.current.idle;
       idle?.reset().fadeIn(CHARACTER.fadeSeconds).play();
       e.action.fadeOut(CHARACTER.fadeSeconds);
       isPlayingExtra.current = false;
-      // Reset the spontaneous-emote timer so it doesn't fire again instantly.
+      activeEmote.current = null;
       idleSeconds.current = 0;
       nextEmoteAt.current = rollEmoteDelay();
     };
@@ -191,8 +199,8 @@ export default function Character({ positionRef }: Props) {
 
     // Cancel an emote the moment the player tries to move.
     if (moving && isPlayingExtra.current) {
-      const extra = extraAction.current;
-      extra?.fadeOut(CHARACTER.fadeSeconds * 0.5);
+      activeEmote.current?.fadeOut(CHARACTER.fadeSeconds * 0.5);
+      activeEmote.current = null;
       isPlayingExtra.current = false;
     }
 
