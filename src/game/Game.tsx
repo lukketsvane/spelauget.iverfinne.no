@@ -15,15 +15,15 @@ export default function Game() {
     <>
       <Canvas
         shadows={{ type: THREE.PCFSoftShadowMap, enabled: true }}
-        dpr={[1, 2]}
+        // dpr < 1 renders the scene to a smaller framebuffer; the canvas
+        // is then stretched up to fit the layout via CSS image-rendering:
+        // pixelated, giving a crisp pixel-art upscale.
+        dpr={0.5}
         gl={{
-          antialias: true,
+          antialias: false,
           powerPreference: 'high-performance',
         }}
         onCreated={({ gl }) => {
-          // ACES tonemapping rolls the bloom highlights off cleanly instead
-          // of clipping to flat white; sRGB output keeps gradient ramps
-          // looking like the design intent.
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.0;
           gl.outputColorSpace = THREE.SRGBColorSpace;

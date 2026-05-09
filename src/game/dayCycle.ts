@@ -7,10 +7,11 @@ export function dayPhase(): number {
   return (Date.now() % CYCLE_MS) / CYCLE_MS;
 }
 
-// Smooth brightness curve — peaks at noon, troughs at midnight, never quite
-// goes black so the scene stays readable.
+// Smooth brightness curve — peaks at noon, troughs at midnight. Range
+// kept above ~0.6 so the gradient ground always reads as visible
+// terrain rather than blackness.
 export function dayBrightness(phase: number): number {
-  return 0.45 + 0.85 * (0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - 0.25)));
+  return 0.65 + 0.7 * (0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - 0.25)));
 }
 
 // Hue rotation in radians. Sweeps ±π/4 (±45°) across the cycle so colours

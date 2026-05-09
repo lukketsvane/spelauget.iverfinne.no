@@ -5,7 +5,6 @@ import { useGame } from '@/store/game';
 export default function HUD() {
   const hearts = useGame((s) => s.hearts);
   const coins = useGame((s) => s.coins);
-  const level = useGame((s) => s.level);
   const xp = useGame((s) => s.xp);
   const xpToNext = useGame((s) => s.xpToNext);
 
@@ -23,9 +22,8 @@ export default function HUD() {
         </div>
       </div>
 
-      {/* Top-right: level + XP */}
+      {/* Top-right: XP */}
       <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-        <div className="text-lg font-semibold tracking-wide">LV. {level}</div>
         <div className="text-xs">
           {xp} / {xpToNext} XP
         </div>
