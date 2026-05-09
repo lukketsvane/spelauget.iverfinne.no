@@ -11,12 +11,16 @@ import {
   PLANT_HALO_GRADIENT,
 } from './gradients';
 
+// height = world units tall.
+// wind   = sway amplitude on the top of the sprite (0 = stiff stem, 1 = leafy).
+// pushable = whether the plant bends away from the player when nearby
+//   (true for soft bushes / grass, false for tree-sized plants).
 const PLANT_SOURCES = [
-  { url: '/plante_01.png', height: 2.4 },
-  { url: '/plante_02.png', height: 3.0 },
-  { url: '/plante_03.png', height: 4.2 },
-  { url: '/plante_04.png', height: 4.0 },
-  { url: '/plante._01.png', height: 2.2 },
+  { url: '/plante_01.png', height: 2.4, wind: 0.7, pushable: true },
+  { url: '/plante_02.png', height: 3.0, wind: 0.6, pushable: true },
+  { url: '/plante_03.png', height: 4.2, wind: 0.2, pushable: false },
+  { url: '/plante_04.png', height: 4.0, wind: 0.35, pushable: false },
+  { url: '/plante._01.png', height: 2.2, wind: 0.8, pushable: true },
 ] as const;
 
 const FACE_CAMERA_Y = Math.PI / 4;
@@ -29,6 +33,11 @@ const PLAYER_SPAWN_SAFE_RADIUS = 3.0;
 type Placement = { idx: number; x: number; z: number; scale: number; flip: boolean };
 type Chunk = { key: string; cx: number; cz: number; placements: Placement[] };
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
+
+type PlantUniforms = {
+  uTime: { value: number };
+  uPlayerPos: { value: THREE.Vector3 };
+};
 
 export default function Plants({ playerPosRef }: Props) {
   const textures = useTexture(PLANT_SOURCES.map((p) => p.url));
@@ -53,14 +62,16 @@ export default function Plants({ playerPosRef }: Props) {
     [textures],
   );
 
-  // Two materials per source: a base gradient-mapped pass and an additive
-  // halo pass. The halo's gradient blacks out the dark half of the source
-  // texture so only the bright edges contribute, giving a self-emissive
-  // glow without a post-processing bloom step.
+  // Track every per-material uniform pair so the useFrame loop can push
+  // shared time + player position without rebinding ref hooks.
+  const uniformList = useRef<PlantUniforms[]>([]);
+
   const gradientTex = useMemo(() => makeGradientTexture(PLANT_GRADIENT), []);
   const haloTex = useMemo(() => makeGradientTexture(PLANT_HALO_GRADIENT), []);
+
   const materials = useMemo(() => {
-    return PLANT_SOURCES.map((_, i) => {
+    uniformList.current = [];
+    return PLANT_SOURCES.map((src, i) => {
       const base = new THREE.MeshBasicMaterial({
         map: textures[i],
         transparent: true,
@@ -69,6 +80,8 @@ export default function Plants({ playerPosRef }: Props) {
         toneMapped: false,
       });
       applyGradientMap(base, gradientTex);
+      applyPlantVertexShader(base, src.wind, src.pushable, uniformList);
+
       const halo = new THREE.MeshBasicMaterial({
         map: textures[i],
         transparent: true,
@@ -78,6 +91,10 @@ export default function Plants({ playerPosRef }: Props) {
         toneMapped: false,
       });
       applyGradientMap(halo, haloTex);
+      // Halo gets the SAME vertex displacement so the additive layer
+      // tracks the base sprite exactly while it sways.
+      applyPlantVertexShader(halo, src.wind, src.pushable, uniformList);
+
       return { base, halo };
     });
   }, [textures, gradientTex, haloTex]);
@@ -85,12 +102,18 @@ export default function Plants({ playerPosRef }: Props) {
   const lastChunk = useRef<{ cx: number; cz: number } | null>(null);
   const [chunks, setChunks] = useState<Map<string, Chunk>>(() => new Map());
 
-  useFrame(() => {
+  useFrame((state) => {
+    // Drive wind + player-push uniforms across every plant material.
+    const t = state.clock.elapsedTime;
+    for (const u of uniformList.current) {
+      u.uTime.value = t;
+      u.uPlayerPos.value.copy(playerPosRef.current);
+    }
+
     const px = playerPosRef.current.x;
     const pz = playerPosRef.current.z;
     const ccx = Math.floor(px / CHUNK_SIZE);
     const ccz = Math.floor(pz / CHUNK_SIZE);
-
     if (lastChunk.current && lastChunk.current.cx === ccx && lastChunk.current.cz === ccz) return;
     lastChunk.current = { cx: ccx, cz: ccz };
 
@@ -140,7 +163,6 @@ export default function Plants({ playerPosRef }: Props) {
                 <planeGeometry args={[sw, sh]} />
                 <primitive object={m.base} attach="material" />
               </mesh>
-              {/* Additive halo nudged forward so it z-sorts above the base. */}
               <mesh position={[0, 0, 0.005]}>
                 <planeGeometry args={[sw * 1.04, sh * 1.04]} />
                 <primitive object={m.halo} attach="material" />
@@ -151,6 +173,74 @@ export default function Plants({ playerPosRef }: Props) {
       )}
     </group>
   );
+}
+
+// Patches a sprite plant's vertex shader with two displacement effects
+// driven from shared uniforms (uTime + uPlayerPos):
+//   1. Wind sway   — top vertices oscillate horizontally; uv.y is the
+//      weight so stems stay anchored at the ground.
+//   2. Player push — when the player is within ~1.4 m of the world-space
+//      vertex, the top of the plant bends away from them, like brushing
+//      against grass. Only enabled for plants flagged `pushable`.
+function applyPlantVertexShader(
+  material: THREE.Material,
+  windAmp: number,
+  pushable: boolean,
+  uniformList: { current: PlantUniforms[] },
+) {
+  const prev = material.onBeforeCompile;
+  material.onBeforeCompile = (shader, renderer) => {
+    prev?.call(material, shader, renderer);
+
+    const uTime = { value: 0 };
+    const uPlayerPos = { value: new THREE.Vector3() };
+    shader.uniforms.uTime = uTime;
+    shader.uniforms.uPlayerPos = uPlayerPos;
+    shader.uniforms.uWindAmp = { value: windAmp };
+    shader.uniforms.uPushAmp = { value: pushable ? 1.0 : 0.0 };
+    uniformList.current.push({ uTime, uPlayerPos });
+
+    shader.vertexShader =
+      /* glsl */ `
+        uniform float uTime;
+        uniform vec3 uPlayerPos;
+        uniform float uWindAmp;
+        uniform float uPushAmp;
+      ` + shader.vertexShader;
+
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      /* glsl */ `
+        #include <begin_vertex>
+
+        // World position before any animation displacement.
+        vec3 wp = (modelMatrix * vec4(transformed, 1.0)).xyz;
+
+        // Wind sway: top of sprite swings horizontally; world-X/Z phase
+        // offset means neighbouring plants sway out of sync.
+        float windPhase = uTime * 1.4 + wp.x * 0.45 + wp.z * 0.35;
+        vec2 windDir = vec2(0.18, 0.06);
+        float swayWeight = uv.y * uWindAmp;
+        transformed.x += sin(windPhase) * windDir.x * swayWeight;
+        transformed.z += cos(windPhase * 0.85) * windDir.y * swayWeight;
+
+        // Player-push: bend the top of the plant away from the player
+        // when they're within ~1.4 m. Quadratic falloff for soft edge.
+        if (uPushAmp > 0.0) {
+          vec2 toPlayer = wp.xz - uPlayerPos.xz;
+          float dSq = dot(toPlayer, toPlayer);
+          float pushRadius = 1.6;
+          float push = max(0.0, 1.0 - dSq / (pushRadius * pushRadius));
+          push *= push;
+          vec2 pushDir = normalize(toPlayer + vec2(0.0001));
+          float scale = uPushAmp * push * uv.y * 0.85;
+          transformed.x += pushDir.x * scale;
+          transformed.z += pushDir.y * scale;
+        }
+      `,
+    );
+  };
+  material.needsUpdate = true;
 }
 
 function buildChunk(cx: number, cz: number): Placement[] {
