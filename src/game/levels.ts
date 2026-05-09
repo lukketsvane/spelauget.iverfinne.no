@@ -58,12 +58,23 @@ export type RockStackSpawn = {
   rotation?: number;
 };
 
+export type TriloSpawn = {
+  kind: 'trilo';
+  id: string;
+  position: [number, number];
+  scale?: number;
+  rotation?: number;
+  color?: string;
+  emissive?: string;
+};
+
 export type Spawn =
   | StarNpcSpawn
   | BobleNpcSpawn
   | PortalSpawn
   | StoneHutSpawn
-  | RockStackSpawn;
+  | RockStackSpawn
+  | TriloSpawn;
 
 export type LevelDefinition = {
   id: LevelId;
@@ -233,6 +244,35 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
           { text: 'Here the light turns blue at night.' },
           { text: 'One day, you might find your way home.' },
         ],
+      },
+      // Three trilo decorations scattered around the meadow — picked
+      // teal/cyan tints to match the level palette.
+      {
+        kind: 'trilo',
+        id: 'l2.trilo.north-west',
+        position: [-6, -12],
+        scale: 1.6,
+        rotation: 0.8,
+        color: '#3d99a8',
+        emissive: '#0a2a3a',
+      },
+      {
+        kind: 'trilo',
+        id: 'l2.trilo.east',
+        position: [16, 0],
+        scale: 2.0,
+        rotation: -1.2,
+        color: '#4ec0c5',
+        emissive: '#0c3340',
+      },
+      {
+        kind: 'trilo',
+        id: 'l2.trilo.south',
+        position: [-4, 20],
+        scale: 1.4,
+        rotation: 2.1,
+        color: '#5fa8d0',
+        emissive: '#10283a',
       },
     ],
   },

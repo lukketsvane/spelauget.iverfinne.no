@@ -12,8 +12,6 @@ const URL = '/models/stjernekarakter.glb';
 const TRIGGER_DISTANCE = 4.5;
 const SCALE = 4.5;
 const FADE = 0.25;
-// Slight speed-up on gestures gives the standing pose a "digging" energy.
-const GESTURE_TIMESCALE = 1.15;
 
 type Props = {
   id: string;
@@ -22,15 +20,16 @@ type Props = {
   playerPosRef: MutableRefObject<THREE.Vector3>;
 };
 
-// Star NPC. Phases:
-//   'dancing' — initial state. The two 6.00 s gestures are cycled
-//      continuously so the character is digging when the player arrives.
-//      The bow gesture starts dialogue but the dance keeps going while
-//      the player reads through the lines.
-//   'idle'    — after the player has talked to them once. Calm standing
-//      idle (the 15.38 s clip on loop). Stays here forever; further
-//      bows still trigger dialogue but no longer change the phase.
-type Phase = 'dancing' | 'idle';
+// Star NPC. Three phases:
+//   'digging' — initial. Plays the 16.38 s lying-down dig loop. The
+//     character stays here while the conversation is going so dialogue
+//     happens AS they're digging in the dirt.
+//   'rising'  — one-shot 3.88 s transition from lying to standing.
+//     Triggered when our dialogue ends.
+//   'idle'    — final calm standing idle on the 15.38 s loop. Stays
+//     here forever; further bows still play dialogue but the digging
+//     pose is gone for good.
+type Phase = 'digging' | 'rising' | 'idle';
 
 export default function StarNpc({ id, position, dialogue, playerPosRef }: Props) {
   const group = useRef<THREE.Group>(null);
@@ -38,14 +37,17 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
   const { scene, animations } = useGLTF(URL);
   const { actions, names, mixer } = useAnimations(animations, group);
 
-  const phaseRef = useRef<Phase>('dancing');
-  // Set when our bow triggers the dialogue, so we only transition to
-  // idle when *our* conversation ends (not someone else's).
+  const phaseRef = useRef<Phase>('digging');
+  // Set when *our* bow triggered the dialogue, so we only transition
+  // out of digging when our own conversation ends.
   const ourDialogue = useRef(false);
 
-  // Heuristic clip mapping. The two 6.00 s clips are the dance gestures
-  // we cycle; idle (15.38 s) is a fallback only. Console logs the
-  // resolved mapping so a wrong assignment is easy to spot.
+  // Heuristic mapping by clip duration.
+  //   16.38 s = digging (lying-down loop)
+  //   15.38 s = idle    (standing loop)
+  //   3.88 s  = rise    (transition, one-shot)
+  // The two 6.00 s gestures and the shorter walk/run/emote clips on
+  // the rig aren't currently used for this NPC.
   const clips = useMemo(() => {
     if (!names.length) return null;
     const byDur = names
@@ -57,65 +59,53 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
       console.log(
         '[StarNpc] clips:',
         byDur.map((c) => `${c.n}=${c.d.toFixed(2)}s`).join(', '),
-        '→ idle:', byDur[1]?.n,
-        'gestureA:', byDur[2]?.n, 'gestureB:', byDur[3]?.n,
+        '→ digging:', byDur[0]?.n,
+        'idle:', byDur[1]?.n,
+        'rise:', byDur[4]?.n,
       );
     }
 
     return {
+      digging: actions[byDur[0]?.n] ?? null, // 16.38 s
       idle: actions[byDur[1]?.n] ?? null, //    15.38 s
-      gestureA: actions[byDur[2]?.n] ?? null, // 6.00 s
-      gestureB: actions[byDur[3]?.n] ?? null, // 6.00 s
+      rise: actions[byDur[4]?.n] ?? null, //     3.88 s
     };
   }, [actions, names]);
 
-  // Configure all clips and start the dance the moment the rig loads.
+  // Configure clips and start the digging loop on mount.
   useEffect(() => {
     if (!clips) return;
-    if (clips.gestureA) {
-      clips.gestureA.setLoop(THREE.LoopOnce, 1);
-      // clamp=true holds the last frame at full weight so the cross-fade
-      // into the next gesture never bottoms out into bind pose (T-pose).
-      clips.gestureA.clampWhenFinished = true;
-      clips.gestureA.timeScale = GESTURE_TIMESCALE;
-    }
-    if (clips.gestureB) {
-      clips.gestureB.setLoop(THREE.LoopOnce, 1);
-      clips.gestureB.clampWhenFinished = true;
-      clips.gestureB.timeScale = GESTURE_TIMESCALE;
-    }
+    if (clips.digging) clips.digging.setLoop(THREE.LoopRepeat, Infinity);
     if (clips.idle) clips.idle.setLoop(THREE.LoopRepeat, Infinity);
-
-    const first = clips.gestureA ?? clips.gestureB ?? clips.idle;
-    if (first) first.reset().fadeIn(FADE).play();
+    if (clips.rise) {
+      clips.rise.setLoop(THREE.LoopOnce, 1);
+      clips.rise.clampWhenFinished = true;
+    }
+    clips.digging?.reset().fadeIn(FADE).play();
   }, [clips]);
 
-  // Cycle gestureA ↔ gestureB on `finished` so the dance is unbroken
-  // — but only while we're in the dancing phase.
+  // After rise finishes, settle into idle.
   useEffect(() => {
     const onFinished = (e: { action: THREE.AnimationAction }) => {
       if (!clips) return;
-      if (phaseRef.current === 'idle') return;
-      const next =
-        e.action === clips.gestureA
-          ? clips.gestureB ?? clips.gestureA ?? clips.idle
-          : e.action === clips.gestureB
-            ? clips.gestureA ?? clips.gestureB ?? clips.idle
-            : null;
-      if (!next) return;
-      next.setLoop(THREE.LoopOnce, 1);
-      next.clampWhenFinished = true;
-      next.timeScale = GESTURE_TIMESCALE;
-      next.reset().fadeIn(FADE).play();
-      e.action.fadeOut(FADE);
+      if (e.action === clips.rise) {
+        const idle = clips.idle;
+        if (idle) {
+          idle.setLoop(THREE.LoopRepeat, Infinity);
+          idle.timeScale = 1;
+          idle.reset().fadeIn(FADE * 1.5).play();
+        }
+        e.action.fadeOut(FADE * 1.5);
+        phaseRef.current = 'idle';
+      }
     };
     mixer.addEventListener('finished', onFinished as never);
     return () => mixer.removeEventListener('finished', onFinished as never);
   }, [clips, mixer]);
 
-  // Bow trigger: starts the inline dialogue when the player emotes
-  // within range. We mark ourselves as the source so the dialogue-end
-  // listener below knows whose conversation just finished.
+  // Bow trigger: opens dialogue when the player emotes within range.
+  // The phase doesn't change here — the character keeps digging until
+  // *after* the conversation ends.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
@@ -132,9 +122,8 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
     return unsub;
   }, [playerPosRef, dialogue]);
 
-  // When *our* dialogue ends, transition from the dance into a calm
-  // standing idle. From then on the NPC stays in idle even if the
-  // player triggers further conversations — they've already been met.
+  // When *our* dialogue ends, fade digging out and play the rise; the
+  // mixer-finished handler above will then settle into idle.
   useEffect(() => {
     let wasActive = useDialogue.getState().active;
     const unsub = useDialogue.subscribe((s) => {
@@ -143,22 +132,26 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
       if (s.active) return;
       if (!ourDialogue.current) return;
       ourDialogue.current = false;
-      if (phaseRef.current === 'idle' || !clips) return;
-      // Cross-fade gestures out, idle in.
-      clips.gestureA?.fadeOut(FADE * 2);
-      clips.gestureB?.fadeOut(FADE * 2);
-      const idle = clips.idle;
-      if (idle) {
-        idle.setLoop(THREE.LoopRepeat, Infinity);
-        idle.timeScale = 1;
-        idle.reset().fadeIn(FADE * 2).play();
+      if (phaseRef.current !== 'digging' || !clips) return;
+      clips.digging?.fadeOut(FADE * 1.5);
+      const rise = clips.rise;
+      if (rise) {
+        rise.setLoop(THREE.LoopOnce, 1);
+        rise.clampWhenFinished = true;
+        rise.reset().fadeIn(FADE).play();
+        phaseRef.current = 'rising';
+      } else if (clips.idle) {
+        // No rise clip available — go straight to idle.
+        clips.idle.reset().fadeIn(FADE * 1.5).play();
+        phaseRef.current = 'idle';
       }
-      phaseRef.current = 'idle';
     });
     return unsub;
   }, [clips]);
 
-  // Continuous tracking + interaction claim + T-pose safety net.
+  // Continuous interaction-claim + safety net + (only after rising)
+  // gentle player-tracking yaw.
+  const facingTargetYaw = useRef<number | null>(null);
   useFrame((_, dt) => {
     const g = group.current;
     if (!g) return;
@@ -167,33 +160,37 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
     const dz = playerPosRef.current.z - g.position.z;
     const dist = Math.hypot(dx, dz);
 
-    // Always face the player while dancing.
-    const target = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      Math.atan2(dx, dz) - Math.PI / 2,
-    );
-    g.quaternion.rotateTowards(target, dt * 4);
+    // Only the standing idle tracks the player. While digging the
+    // character is face-down on the ground — rotating it would look
+    // wrong, so we skip the yaw update.
+    if (phaseRef.current === 'idle') {
+      facingTargetYaw.current = Math.atan2(dx, dz) - Math.PI / 2;
+    }
+    if (facingTargetYaw.current !== null) {
+      const target = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        facingTargetYaw.current,
+      );
+      g.quaternion.rotateTowards(target, dt * 4);
+    }
 
-    // Interaction availability for the HUD button.
     if (dist < TRIGGER_DISTANCE) useInteraction.getState().claim(id);
     else useInteraction.getState().release(id);
 
-    // Safety net: ensure something is always driving the bones. The
-    // expected clip depends on the current phase.
+    // Safety net: if the active phase's clip has zero weight (paused
+    // tab, missed event, etc.), restart it so we can never sit in
+    // bind-pose / T-pose.
     if (clips) {
-      const inIdle = phaseRef.current === 'idle';
-      const desired = inIdle
-        ? clips.idle ?? clips.gestureA
-        : clips.gestureA ?? clips.gestureB ?? clips.idle;
+      const phase = phaseRef.current;
+      const desired =
+        phase === 'digging'
+          ? clips.digging
+          : phase === 'idle'
+            ? clips.idle
+            : null;
       if (desired && desired.getEffectiveWeight() < 0.01) {
-        if (inIdle) {
-          desired.setLoop(THREE.LoopRepeat, Infinity);
-          desired.timeScale = 1;
-        } else {
-          desired.setLoop(THREE.LoopOnce, 1);
-          desired.clampWhenFinished = true;
-          desired.timeScale = GESTURE_TIMESCALE;
-        }
+        desired.setLoop(THREE.LoopRepeat, Infinity);
+        desired.timeScale = 1;
         desired.reset().fadeIn(FADE).play();
       }
     }
@@ -203,8 +200,7 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
     return () => useInteraction.getState().release(id);
   }, [id]);
 
-  // Foot lift so feet rest on y=0. Computed one frame after mount so
-  // the mixer has applied a gesture pose before we measure.
+  // Foot lift in the digging pose so the body rests on y = 0.
   const [footLift, setFootLift] = useState(0);
   useEffect(() => {
     const handle = requestAnimationFrame(() => {

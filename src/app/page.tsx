@@ -4,11 +4,9 @@ import dynamic from 'next/dynamic';
 
 const Game = dynamic(() => import('@/game/Game'), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-screen w-screen items-center justify-center bg-[#0a0418] text-violet-300">
-      Loading…
-    </div>
-  ),
+  // No loading placeholder — the menu screen is the natural visual
+  // anchor while assets stream in.
+  loading: () => <div className="h-screen w-screen bg-[#0a0418]" />,
 });
 
 export default function Page() {

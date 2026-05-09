@@ -10,6 +10,7 @@ import BobleNpc from './BobleNpc';
 import Portal from './Portal';
 import StoneHut from './StoneHut';
 import RockStack from './RockStack';
+import Trilo from './Trilo';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -79,6 +80,17 @@ export default function Spawns({ playerPosRef }: Props) {
                 position={[s.position[0], 0, s.position[1]]}
                 scale={s.scale}
                 rotationY={s.rotation}
+              />
+            );
+          case 'trilo':
+            return (
+              <Trilo
+                key={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                scale={s.scale}
+                rotationY={s.rotation}
+                color={s.color}
+                emissive={s.emissive}
               />
             );
           default:
