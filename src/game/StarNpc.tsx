@@ -20,9 +20,9 @@ const GESTURE_TIMESCALE = 1.15;
 
 // The story shown when the player wakes the slumped wanderer.
 const STORY: DialogueLine[] = [
-  { speaker: 'Stjernevandreren', text: 'hei velkommen til VITTA TIL IDA NEVERDAHL!' },
-  { speaker: 'Stjernevandreren', text: 'HER ER DET JÆVKIG GOD PLASS' },
-  { speaker: 'Stjernevandreren', text: 'IDA ER EN JÆVLA HORE' },
+  { text: 'hei velkommen til VITTA TIL IDA NEVERDAHL!' },
+  { text: 'HER ER DET JÆVKIG GOD PLASS' },
+  { text: 'IDA ER EN JÆVLA HORE' },
 ];
 
 // 'standing' = the lively gesture cycle while telling the story.
@@ -218,7 +218,7 @@ export default function StarNpc({ playerPosRef }: Props) {
       phaseRef.current === 'slumped' && Math.hypot(dx, dz) < TRIGGER_DISTANCE;
     const cur = useInteraction.getState();
     if (cur.available !== inRange) {
-      useInteraction.getState().setAvailable(inRange, inRange ? 'Bukk for å hilse' : null);
+      useInteraction.getState().setAvailable(inRange, null);
     }
 
     // Safety net: if no clip has any weight on the bones, the character

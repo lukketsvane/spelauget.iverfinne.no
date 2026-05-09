@@ -33,8 +33,10 @@ export default function Ground() {
     const m = new THREE.MeshLambertMaterial({
       map: tex,
       color: '#ffffff',
-      emissive: new THREE.Color('#ffffff'),
-      emissiveIntensity: 0.55,
+      // Lavender emissive base modulated by the tile texture means the
+      // ground glows softly even in shadow — the pattern stays readable.
+      emissive: new THREE.Color('#a08bc0'),
+      emissiveIntensity: 0.6,
       emissiveMap: tex,
     });
     applyGradientMap(m, gradientTex);

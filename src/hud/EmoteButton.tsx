@@ -8,7 +8,6 @@ import { useInteraction } from '@/store/interaction';
 // is what NPCs subscribe to in order to start their interaction.
 export default function EmoteButton() {
   const available = useInteraction((s) => s.available);
-  const prompt = useInteraction((s) => s.prompt);
   const request = useEmote((s) => s.request);
 
   if (!available) return null;
@@ -21,25 +20,18 @@ export default function EmoteButton() {
           e.stopPropagation();
           request();
         }}
-        className="pointer-events-auto absolute bottom-6 right-6 flex flex-col items-center gap-1 transition active:scale-95"
-        aria-label={prompt ?? 'Interagér'}
+        className="pointer-events-auto absolute bottom-6 right-6 flex h-16 w-16 items-center justify-center rounded-full border border-pink-300/60 bg-violet-950/70 shadow-[0_8px_28px_rgba(236,90,200,0.55)] backdrop-blur transition active:scale-95"
+        aria-label="Interagér"
       >
-        <span className="flex h-16 w-16 items-center justify-center rounded-full border border-pink-300/60 bg-violet-950/70 shadow-[0_8px_28px_rgba(236,90,200,0.55)] backdrop-blur">
-          <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden>
-            <path
-              d="M12 2.5l2.39 6.46 6.86.36-5.27 4.39 1.74 6.65L12 16.9l-5.72 3.46 1.74-6.65L2.75 9.32l6.86-.36L12 2.5z"
-              fill="#ff9bd6"
-              stroke="#ffe3f2"
-              strokeWidth="1.2"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-        {prompt && (
-          <span className="rounded-full bg-violet-950/70 px-3 py-0.5 text-xs uppercase tracking-widest text-pink-200 shadow-md backdrop-blur">
-            {prompt}
-          </span>
-        )}
+        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden>
+          <path
+            d="M12 2.5l2.39 6.46 6.86.36-5.27 4.39 1.74 6.65L12 16.9l-5.72 3.46 1.74-6.65L2.75 9.32l6.86-.36L12 2.5z"
+            fill="#ff9bd6"
+            stroke="#ffe3f2"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
     </div>
   );

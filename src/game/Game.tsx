@@ -18,8 +18,9 @@ export default function Game() {
         shadows={{ type: THREE.PCFSoftShadowMap, enabled: true }}
         // dpr < 1 renders the scene to a smaller framebuffer; the canvas
         // is then stretched up to fit the layout via CSS image-rendering:
-        // pixelated, giving a crisp pixel-art upscale.
-        dpr={0.5}
+        // pixelated, giving a crisp pixel-art upscale. 0.3 ≈ 1/3 the CSS
+        // pixel size — chunky pixels even at 100 % browser zoom.
+        dpr={0.3}
         gl={{
           antialias: false,
           powerPreference: 'high-performance',
