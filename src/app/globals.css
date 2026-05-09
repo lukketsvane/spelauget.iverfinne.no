@@ -18,4 +18,10 @@ body,
 canvas {
   display: block;
   outline: none;
+  /* Hand-in-hand with a low Canvas dpr — the framebuffer is rendered
+     at fewer pixels and stretched up using nearest-neighbour, giving a
+     crisp pixel-art look on top of the 3D rendering. */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
