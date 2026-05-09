@@ -46,6 +46,17 @@ export default function StarNpc({ playerPosRef }: Props) {
     const byDur = names
       .map((n) => ({ n, d: actions[n]?.getClip().duration ?? 0 }))
       .sort((a, b) => b.d - a.d);
+
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[StarNpc] clips:',
+        byDur.map((c) => `${c.n}=${c.d.toFixed(2)}s`).join(', '),
+        '→ slumped:', byDur[0]?.n, 'idle:', byDur[1]?.n,
+        'gestureA:', byDur[2]?.n, 'gestureB:', byDur[3]?.n, 'rise:', byDur[4]?.n,
+      );
+    }
+
     return {
       slumped: actions[byDur[0].n] ?? null, // 16.38 s
       idle: actions[byDur[1].n] ?? null, //    15.38 s
@@ -163,22 +174,27 @@ export default function StarNpc({ playerPosRef }: Props) {
       g.quaternion.rotateTowards(target, dt * 4);
     }
 
-    // Safety net: if we're standing but somehow no gesture has any weight
-    // (T-pose), restart the dance. This catches edge cases where a
-    // finished event was missed (e.g. paused tab, animation reset).
-    if (phaseRef.current === 'standing' && clips) {
-      const a = clips.gestureA;
-      const b = clips.gestureB;
-      const aWeight = a?.getEffectiveWeight() ?? 0;
-      const bWeight = b?.getEffectiveWeight() ?? 0;
-      if (aWeight < 0.01 && bWeight < 0.01) {
-        const fallback = a ?? b ?? clips.idle;
-        if (fallback) {
-          fallback.setLoop(THREE.LoopOnce, 1);
-          fallback.clampWhenFinished = true;
-          fallback.timeScale = GESTURE_TIMESCALE;
-          fallback.reset().fadeIn(FADE).play();
+    // Safety net: if no clip has any weight on the bones, the character
+    // would render in bind pose (T-pose). Restart whatever pose belongs
+    // to the current phase. Catches missed `finished` events, reset
+    // edge cases, paused tabs, etc.
+    if (clips) {
+      const phase = phaseRef.current;
+      const desired =
+        phase === 'slumped'
+          ? clips.slumped
+          : phase === 'standing'
+            ? clips.gestureA ?? clips.gestureB ?? clips.idle
+            : null; // 'rising' is one-shot, leave alone
+      if (desired && desired.getEffectiveWeight() < 0.01) {
+        if (phase === 'slumped') {
+          desired.setLoop(THREE.LoopRepeat, Infinity);
+        } else {
+          desired.setLoop(THREE.LoopOnce, 1);
+          desired.clampWhenFinished = true;
+          desired.timeScale = GESTURE_TIMESCALE;
         }
+        desired.reset().fadeIn(FADE).play();
       }
     }
   });
