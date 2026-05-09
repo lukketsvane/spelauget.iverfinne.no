@@ -6,6 +6,7 @@ import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import { useDialogue, type DialogueLine } from '@/store/dialogue';
 import { useEmote } from '@/store/emote';
+import { useInteraction } from '@/store/interaction';
 
 const URL = '/models/stjernekarakter.glb';
 const SPAWN_X = 6;
@@ -24,7 +25,9 @@ const STORY: DialogueLine[] = [
   { speaker: 'Stjernevandreren', text: 'IDA ER EN JÆVLA HORE' },
 ];
 
-type Phase = 'slumped' | 'rising' | 'standing';
+// 'standing' = the lively gesture cycle while telling the story.
+// 'idle' = post-conversation calm idle, slowly tracking the player.
+type Phase = 'slumped' | 'rising' | 'standing' | 'idle';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
