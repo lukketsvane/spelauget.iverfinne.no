@@ -11,6 +11,8 @@ import Particles from './Particles';
 import StarNpc from './StarNpc';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
+import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
+import { updateGradientUniforms } from './gradients';
 
 const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 
@@ -21,9 +23,15 @@ const NIGHT = '#0a0418';
 export default function Scene() {
   const camRef = useRef<THREE.OrthographicCamera>(null);
   const lightRef = useRef<THREE.DirectionalLight>(null);
+  const ambientRef = useRef<THREE.AmbientLight>(null);
+  const hemisphereRef = useRef<THREE.HemisphereLight>(null);
+  const fogRef = useRef<THREE.Fog>(null);
   const lightTargetRef = useRef<THREE.Object3D>(new THREE.Object3D());
   const target = useRef(new THREE.Vector3());
   const characterPos = useRef(new THREE.Vector3());
+
+  // Reusable colour scratch — avoid GC churn on the hot path.
+  const dayColor = useRef(new THREE.Color(NIGHT));
 
   const { size, gl } = useThree();
 
@@ -70,12 +78,34 @@ export default function Scene() {
       lightTargetRef.current.position.copy(target.current);
       lightTargetRef.current.updateMatrixWorld();
     }
+
+    // 10-minute UTC-synced day/night cycle. Drives gradient uniforms and
+    // the analog scene lights together so day reads bright and warm,
+    // night reads cool and dim — synced across all clients.
+    const phase = dayPhase();
+    const brightness = dayBrightness(phase);
+    const hue = dayHueAngle(phase);
+    updateGradientUniforms(hue, brightness);
+
+    if (ambientRef.current) ambientRef.current.intensity = 0.45 * brightness;
+    if (hemisphereRef.current) hemisphereRef.current.intensity = 0.55 * brightness;
+    if (light) light.intensity = 0.85 * brightness;
+
+    // Fog tint follows the cycle so distant geometry blends into a sky
+    // that matches the current "time of day".
+    if (fogRef.current) {
+      // 0.6 darker at midnight, 1.4 brighter at noon — relative to base.
+      const tint = 0.6 + 0.8 * brightness;
+      dayColor.current.set(NIGHT).multiplyScalar(tint);
+      fogRef.current.color.copy(dayColor.current);
+    }
   });
 
   return (
     <>
-      {/* Atmospheric fog: distant trees fade into the night sky. */}
-      <fog attach="fog" args={[NIGHT, 24, 60]} />
+      {/* Atmospheric fog: distant trees fade into the sky. Colour is
+          updated each frame so it follows the day/night tint. */}
+      <fog ref={fogRef} attach="fog" args={[NIGHT, 24, 60]} />
       <color attach="background" args={[NIGHT]} />
 
       <OrthographicCamera
@@ -87,10 +117,10 @@ export default function Scene() {
         position={[CAMERA.offset.x, CAMERA.offset.y, CAMERA.offset.z]}
       />
 
-      {/* Cool low ambient + violet hemisphere = night gloom. The directional
-          key light is cooled and dimmed so the scene reads moonlit. */}
-      <ambientLight intensity={0.45} color="#5a4a8a" />
-      <hemisphereLight args={['#7c5fb8', '#0a0418', 0.55]} />
+      {/* Cool low ambient + violet hemisphere = night gloom. Intensities
+          are mutated each frame by the day-cycle loop above. */}
+      <ambientLight ref={ambientRef} intensity={0.45} color="#5a4a8a" />
+      <hemisphereLight ref={hemisphereRef} args={['#7c5fb8', '#0a0418', 0.55]} />
       <directionalLight
         ref={lightRef}
         position={[LIGHT_OFFSET.x, LIGHT_OFFSET.y, LIGHT_OFFSET.z]}

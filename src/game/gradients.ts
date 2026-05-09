@@ -59,14 +59,53 @@ export function makeGradientTexture(stops: Stop[], width = 256): THREE.DataTextu
   return tex;
 }
 
+// All gradient-mapped materials register their per-cycle uniforms here so
+// a single useFrame call from Scene can drive day/night for every surface
+// at once. Materials live for the lifetime of the app, so growing this
+// list isn't a leak in practice.
+type GradientUniforms = {
+  uHueAngle: { value: number };
+  uBrightness: { value: number };
+};
+const REGISTRY: GradientUniforms[] = [];
+
+export function updateGradientUniforms(hueAngle: number, brightness: number) {
+  for (const u of REGISTRY) {
+    u.uHueAngle.value = hueAngle;
+    u.uBrightness.value = brightness;
+  }
+}
+
 // Patches a material's <map_fragment> shader chunk to remap the sampled
-// texture's luminance through a 1D gradient texture. Works for any
-// material that includes the standard map_fragment chunk (Lambert, Basic,
-// Standard, Phong all do).
+// texture's luminance through a 1D gradient texture, then rotates the
+// hue and scales the brightness based on shared day-cycle uniforms.
+// Works for any material that includes the standard map_fragment chunk
+// (Lambert, Basic, Standard, Phong).
 export function applyGradientMap(material: THREE.Material, gradient: THREE.Texture) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.gradientMap = { value: gradient };
-    shader.fragmentShader = `uniform sampler2D gradientMap;\n${shader.fragmentShader}`;
+    shader.uniforms.uHueAngle = { value: 0 };
+    shader.uniforms.uBrightness = { value: 1 };
+    REGISTRY.push({
+      uHueAngle: shader.uniforms.uHueAngle,
+      uBrightness: shader.uniforms.uBrightness,
+    });
+
+    shader.fragmentShader =
+      /* glsl */ `
+      uniform sampler2D gradientMap;
+      uniform float uHueAngle;
+      uniform float uBrightness;
+
+      // Rodrigues rotation around the (1,1,1)/√3 axis — hue rotation on
+      // RGB that preserves luminance.
+      vec3 hueShift(vec3 col, float angle) {
+        const vec3 k = vec3(0.57735026, 0.57735026, 0.57735026);
+        float c = cos(angle);
+        return col * c + cross(k, col) * sin(angle) + k * dot(k, col) * (1.0 - c);
+      }
+    ` + shader.fragmentShader;
+
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <map_fragment>',
       /* glsl */ `
@@ -74,6 +113,8 @@ export function applyGradientMap(material: THREE.Material, gradient: THREE.Textu
           vec4 sampledColor = texture2D( map, vMapUv );
           float gradLum = dot( sampledColor.rgb, vec3(0.299, 0.587, 0.114) );
           vec3 graded = texture2D( gradientMap, vec2(gradLum, 0.5) ).rgb;
+          graded = hueShift(graded, uHueAngle);
+          graded *= uBrightness;
           sampledColor.rgb = graded;
           diffuseColor *= sampledColor;
         #endif

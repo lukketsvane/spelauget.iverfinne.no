@@ -2,9 +2,9 @@
 
 import { useEmote } from '@/store/emote';
 
-// Bottom-right corner button — gives mobile players a way to fire the
-// extra emote (desktop has E/Space). Pointer-events-auto on the button so
-// it punches through PointerInput's overlay.
+// Bottom-right emote button. Sits at z-20 above PointerInput (z-10) and
+// stops pointer-down propagation so a tap on the star doesn't double as
+// a tap-to-move on the canvas.
 export default function EmoteButton() {
   const request = useEmote((s) => s.request);
 
@@ -16,15 +16,15 @@ export default function EmoteButton() {
           e.stopPropagation();
           request();
         }}
-        className="pointer-events-auto absolute bottom-6 right-6 flex h-16 w-16 items-center justify-center rounded-full border-2 border-neutral-700 bg-white/80 text-2xl shadow-md backdrop-blur transition active:scale-95 active:bg-neutral-200"
+        className="pointer-events-auto absolute bottom-6 right-6 flex h-16 w-16 items-center justify-center rounded-full border border-pink-300/50 bg-violet-950/70 shadow-[0_8px_24px_rgba(236,90,200,0.45)] backdrop-blur transition active:scale-95"
         aria-label="Emote"
       >
-        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden>
+        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden>
           <path
             d="M12 2.5l2.39 6.46 6.86.36-5.27 4.39 1.74 6.65L12 16.9l-5.72 3.46 1.74-6.65L2.75 9.32l6.86-.36L12 2.5z"
-            fill="#fbbf24"
-            stroke="#a16207"
-            strokeWidth="1.4"
+            fill="#ff9bd6"
+            stroke="#ffe3f2"
+            strokeWidth="1.2"
             strokeLinejoin="round"
           />
         </svg>

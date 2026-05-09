@@ -7,24 +7,20 @@ import * as THREE from 'three';
 import { useDialogue, type DialogueLine } from '@/store/dialogue';
 
 const URL = '/models/stjernekarakter.glb';
-const SPAWN_X = 4;
-const SPAWN_Z = 4;
-const TRIGGER_DISTANCE = 2.8;
-const SCALE = 2.0;
+const SPAWN_X = 5;
+const SPAWN_Z = 5;
+const TRIGGER_DISTANCE = 3.2;
+const SCALE = 3.0;
 const FADE = 0.25;
+// Slight speed-up on gestures gives the standing pose a "digging" energy
+// so the NPC reads as grooving while it talks.
+const GESTURE_TIMESCALE = 1.15;
 
 // The story shown when the player wakes the slumped wanderer.
 const STORY: DialogueLine[] = [
-  { speaker: 'Stjernevandreren', text: '...' },
-  { speaker: 'Stjernevandreren', text: 'Du... du kan se meg?' },
-  { speaker: 'Stjernevandreren', text: 'Det er lenge siden noen vandret denne veien.' },
-  { speaker: 'Stjernevandreren', text: 'Jeg fryktet jeg skulle bli liggende her for alltid.' },
-  {
-    speaker: 'Stjernevandreren',
-    text: 'Lysene som flakker rundt oss — det er sjelene til de som har fart vill.',
-  },
-  { speaker: 'Stjernevandreren', text: 'De har ventet på en som du.' },
-  { speaker: 'Stjernevandreren', text: 'Følg dem dypere inn. Jeg venter her.' },
+  { speaker: 'Stjernevandreren', text: 'hei velkommen til VITTA TIL IDA NEVERDAHL!' },
+  { speaker: 'Stjernevandreren', text: 'HER ER DET JÆVKIG GOD PLASS' },
+  { speaker: 'Stjernevandreren', text: 'IDA ER EN JÆVLA HORE' },
 ];
 
 type Phase = 'slumped' | 'rising' | 'standing';
@@ -82,18 +78,36 @@ export default function StarNpc({ playerPosRef }: Props) {
     }
   }, [clips]);
 
-  // -- Mixer events: rise → standing idle, gestures → re-blend idle ------
+  // -- Mixer events: rise → first gesture; gestures cycle into the next --
+  // The continuous gesture chain is what makes the standing pose look
+  // "digging" — the NPC keeps moving instead of settling into static idle.
   useEffect(() => {
     const onFinished = (e: { action: THREE.AnimationAction }) => {
       if (!clips) return;
       if (e.action === clips.rise) {
-        // Rise complete → standing idle
-        clips.idle?.reset().fadeIn(FADE * 1.5).play();
+        // Just stood up → kick into first dance gesture.
+        const first = clips.gestureA ?? clips.gestureB ?? clips.idle;
+        if (first) {
+          first.timeScale = GESTURE_TIMESCALE;
+          first.reset().fadeIn(FADE * 1.5).play();
+        }
         e.action.fadeOut(FADE * 1.5);
         setPhase('standing');
-      } else if (e.action === clips.gestureA || e.action === clips.gestureB) {
-        // Gesture done → blend back to idle
-        clips.idle?.reset().fadeIn(FADE).play();
+      } else if (e.action === clips.gestureA) {
+        // A → B
+        const b = clips.gestureB ?? clips.idle;
+        if (b) {
+          b.timeScale = GESTURE_TIMESCALE;
+          b.reset().fadeIn(FADE).play();
+        }
+        e.action.fadeOut(FADE);
+      } else if (e.action === clips.gestureB) {
+        // B → A
+        const a = clips.gestureA ?? clips.idle;
+        if (a) {
+          a.timeScale = GESTURE_TIMESCALE;
+          a.reset().fadeIn(FADE).play();
+        }
         e.action.fadeOut(FADE);
       }
     };
@@ -132,25 +146,6 @@ export default function StarNpc({ playerPosRef }: Props) {
     );
     g.quaternion.rotateTowards(target, dt * 4);
   });
-
-  // -- Talking gestures triggered by dialogue line advance ---------------
-  useEffect(() => {
-    let lastReq = useDialogue.getState().requestId;
-    const unsub = useDialogue.subscribe((s) => {
-      if (s.requestId === lastReq) return;
-      lastReq = s.requestId;
-      if (!s.active) return;
-      if (phaseRef.current !== 'standing') return;
-      if (!clips) return;
-      // Pick a gesture at random for variation.
-      const gesture = Math.random() < 0.5 ? clips.gestureA : clips.gestureB;
-      if (gesture) {
-        clips.idle?.fadeOut(FADE);
-        gesture.reset().fadeIn(FADE).play();
-      }
-    });
-    return unsub;
-  }, [clips]);
 
   // -- Foot lift so feet rest on y=0 in the slumped pose -----------------
   // Skinned-mesh bbox depends on the current pose; computing once on

@@ -103,20 +103,29 @@ export default function Character({ positionRef }: Props) {
     };
   }, [actions, names]);
 
-  // -- Emote: fade idle out, fire a random one-shot, fade idle back in ----
+  // -- Emote: fade out whatever's playing, fire a random one-shot, fade
+  // back to idle. Always responsive — pressing the button stops movement
+  // immediately so the emote actually plays even while the player was
+  // walking. The useFrame movement check still cancels mid-emote if the
+  // user actively pushes input again.
   const playEmote = useMemo(() => {
     return () => {
       const pool = emotePool.current;
-      const idle = clipsByRole.current.idle;
       if (!pool.length) return;
       if (isPlayingExtra.current) return;
-      if (currentRole.current !== 'idle') return;
+
+      // Halt current motion so the emote has visual room to play.
+      useInput.getState().setMove(0, 0);
+      useInput.getState().clearDestination();
 
       const pick = pool[Math.floor(Math.random() * pool.length)];
       activeEmote.current = pick;
       isPlayingExtra.current = true;
-      idle?.fadeOut(CHARACTER.fadeSeconds * 0.6);
+
+      const current = clipsByRole.current[currentRole.current];
+      current?.fadeOut(CHARACTER.fadeSeconds * 0.6);
       pick.reset().fadeIn(CHARACTER.fadeSeconds * 0.6).play();
+      currentRole.current = 'idle';
     };
   }, []);
 
