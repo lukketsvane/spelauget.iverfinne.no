@@ -53,14 +53,26 @@ export default function KeyboardInput() {
       held.clear();
       apply();
     };
+    // visibilitychange catches tab-backgrounding even when window blur
+    // doesn't fire (some OSes / browser configs). Without this, holding
+    // 'D' and Cmd-Tabbing away leaves the character walking forever
+    // until the player comes back.
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        held.clear();
+        apply();
+      }
+    };
 
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
     window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
       window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 

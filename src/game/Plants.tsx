@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { applyGradientMap, makeGradientTexture } from './gradients';
 import { LEVELS } from './levels';
 import { useLevel } from '@/store/level';
+import { useSettings } from '@/store/settings';
 
 // height = world units tall.
 // wind   = sway amplitude on the top of the sprite (0 = stiff stem, 1 = leafy).
@@ -122,7 +123,12 @@ export default function Plants({ playerPosRef, exclusions }: Props) {
 
   useFrame((state) => {
     // Drive wind + player-push uniforms across every plant material.
-    const t = state.clock.elapsedTime;
+    // When reduceMotion is on, freeze uTime so the wind sway is locked
+    // to its zero-phase pose. Player-push still fires (it only triggers
+    // on close approach and reads as feedback rather than ambient
+    // motion).
+    const reduceMotion = useSettings.getState().reduceMotion;
+    const t = reduceMotion ? 0 : state.clock.elapsedTime;
     for (const u of uniformList.current) {
       u.uTime.value = t;
       u.uPlayerPos.value.copy(playerPosRef.current);

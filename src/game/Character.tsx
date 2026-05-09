@@ -173,6 +173,44 @@ export default function Character({ positionRef }: Props) {
     });
   }, []);
 
+  // Initial spawn: teleport to the rehydrated playerSpawn (which is
+  // savedPosition on Continue, or the level marker on a fresh save).
+  // Without this, the character would render at world origin until the
+  // first level-change subscription fires.
+  useEffect(() => {
+    const g = group.current;
+    if (!g) return;
+    const spawn = useLevel.getState().playerSpawn;
+    g.position.set(spawn.x, 0, spawn.z);
+    positionRef.current.copy(g.position);
+    playerWorldPos.copy(g.position);
+  }, [positionRef]);
+
+  // Autosave: write the current position to the level store every
+  // couple seconds. The store de-dupes near-identical writes and skips
+  // updates during a teleport, so localStorage bandwidth stays low.
+  // Also flush on unmount / page hide so a quick close doesn't lose
+  // the last few metres of walking.
+  useEffect(() => {
+    const flush = () => {
+      const g = group.current;
+      if (!g) return;
+      useLevel.getState().savePosition(g.position.x, g.position.z);
+    };
+    const tick = setInterval(flush, 2000);
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
+
   // Keyboard shortcut: E or Space.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

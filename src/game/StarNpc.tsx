@@ -8,6 +8,7 @@ import { useDialogue, type DialogueLine } from '@/store/dialogue';
 import { useEmote } from '@/store/emote';
 import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
+import { useToast } from '@/store/toast';
 
 const URL = '/models/stjernekarakter.glb';
 const TRIGGER_DISTANCE = 4.5;
@@ -90,7 +91,9 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
   }, [playerPosRef, dialogue]);
 
   // When *our* dialogue closes, hand the player the key. The character
-  // stays digging — no animation change.
+  // stays digging — no animation change. Suppressed when the player
+  // already has a key so re-talking to the digger doesn't spam the
+  // toast.
   useEffect(() => {
     let wasActive = useDialogue.getState().active;
     const unsub = useDialogue.subscribe((s) => {
@@ -99,7 +102,11 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
       if (s.active) return;
       if (!ourDialogue.current) return;
       ourDialogue.current = false;
+      const hadKey = useGame.getState().hasKey;
       useGame.getState().giveKey();
+      if (!hadKey) {
+        useToast.getState().push('Got the key', 'success');
+      }
     });
     return unsub;
   }, []);

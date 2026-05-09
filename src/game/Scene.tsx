@@ -8,7 +8,9 @@ import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
 import Particles from './Particles';
+import Footsteps from './Footsteps';
 import Spawns from './Spawns';
+import ExposureSync from './ExposureSync';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
@@ -22,6 +24,13 @@ const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 // horizon for a deeper, more atmospheric feel.
 const NIGHT = '#0a0418';
 
+// The day/night cycle changes brightness over a 10-minute period, i.e.
+// the visible delta per frame is microscopic. Quantising the uniform
+// writes to ~4 Hz drops 56 redundant updates per second across plant /
+// ground / halo materials with no visible difference. The 250 ms tick
+// is small enough that hue/brightness still feels continuous.
+const DAY_CYCLE_INTERVAL_MS = 250;
+
 export default function Scene() {
   const camRef = useRef<THREE.OrthographicCamera>(null);
   const lightRef = useRef<THREE.DirectionalLight>(null);
@@ -34,6 +43,10 @@ export default function Scene() {
 
   // Reusable colour scratch — avoid GC churn on the hot path.
   const dayColor = useRef(new THREE.Color(NIGHT));
+  // Last wall-clock time the day-cycle uniforms were updated. Tested
+  // each frame so we can quantise to DAY_CYCLE_INTERVAL_MS without a
+  // separate setInterval and its own timer drift.
+  const lastDayUpdateRef = useRef(0);
 
   const { size, gl } = useThree();
 
@@ -144,23 +157,30 @@ export default function Scene() {
 
     // 10-minute UTC-synced day/night cycle. Drives gradient uniforms and
     // the analog scene lights together so day reads bright and warm,
-    // night reads cool and dim — synced across all clients.
-    const phase = dayPhase();
-    const brightness = dayBrightness(phase);
-    const hue = dayHueAngle(phase);
-    updateGradientUniforms(hue, brightness);
+    // night reads cool and dim — synced across all clients. Throttled
+    // to ~4 Hz: the cycle's per-frame delta is invisible at 60 fps and
+    // recomputing brightness/hue + writing to every gradient material
+    // each frame is pure waste.
+    const now = performance.now();
+    if (now - lastDayUpdateRef.current >= DAY_CYCLE_INTERVAL_MS) {
+      lastDayUpdateRef.current = now;
+      const phase = dayPhase();
+      const brightness = dayBrightness(phase);
+      const hue = dayHueAngle(phase);
+      updateGradientUniforms(hue, brightness);
 
-    if (ambientRef.current) ambientRef.current.intensity = 1.1 * brightness;
-    if (hemisphereRef.current) hemisphereRef.current.intensity = 0.95 * brightness;
-    if (light) light.intensity = 1.4 * brightness;
+      if (ambientRef.current) ambientRef.current.intensity = 1.1 * brightness;
+      if (hemisphereRef.current) hemisphereRef.current.intensity = 0.95 * brightness;
+      if (light) light.intensity = 1.4 * brightness;
 
-    // Fog tint follows the cycle so distant geometry blends into a sky
-    // that matches the current "time of day".
-    if (fogRef.current) {
-      // 0.6 darker at midnight, 1.4 brighter at noon — relative to base.
-      const tint = 0.6 + 0.8 * brightness;
-      dayColor.current.set(NIGHT).multiplyScalar(tint);
-      fogRef.current.color.copy(dayColor.current);
+      // Fog tint follows the cycle so distant geometry blends into a sky
+      // that matches the current "time of day".
+      if (fogRef.current) {
+        // 0.6 darker at midnight, 1.4 brighter at noon — relative to base.
+        const tint = 0.6 + 0.8 * brightness;
+        dayColor.current.set(NIGHT).multiplyScalar(tint);
+        fogRef.current.color.copy(dayColor.current);
+      }
     }
   });
 
@@ -206,8 +226,10 @@ export default function Scene() {
       <Ground />
       <Plants playerPosRef={characterPos} exclusions={plantExclusions} />
       <Particles playerPosRef={characterPos} />
+      <Footsteps playerPosRef={characterPos} />
       <Spawns playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
+      <ExposureSync />
     </>
   );
 }

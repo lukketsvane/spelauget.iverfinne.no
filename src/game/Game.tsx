@@ -12,6 +12,10 @@ import MainMenu from '@/hud/MainMenu';
 import PauseMenuButton from '@/hud/PauseMenuButton';
 import BlackOverlay from '@/hud/BlackOverlay';
 import TeleportOverlay from '@/hud/TeleportOverlay';
+import MenuHotkey from '@/hud/MenuHotkey';
+import FpsOverlay from '@/hud/FpsOverlay';
+import SaveIndicator from '@/hud/SaveIndicator';
+import ToastHost from '@/hud/ToastHost';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 import BackgroundMusic from './BackgroundMusic';
@@ -56,6 +60,8 @@ export default function Game() {
           <Dialogue />
           <LevelLabel />
           <PauseMenuButton />
+          <SaveIndicator />
+          <ToastHost />
         </>
       )}
 
@@ -63,6 +69,8 @@ export default function Game() {
 
       <BlackOverlay />
       <TeleportOverlay />
+      <MenuHotkey />
+      <FpsOverlay />
       <BackgroundMusic />
       <ServiceWorker />
     </>

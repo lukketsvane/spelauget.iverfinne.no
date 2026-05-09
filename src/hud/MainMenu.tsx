@@ -5,6 +5,7 @@ import { useAudio } from '@/store/audio';
 import { useGame } from '@/store/game';
 import { useLevel } from '@/store/level';
 import { useMenu } from '@/store/menu';
+import { useSettings } from '@/store/settings';
 
 // Splash menu shown before the game canvas takes focus, and as a
 // pause overlay when the player taps the menu button mid-game.
@@ -113,14 +114,33 @@ function ImageButton({
 function SettingsPanel({ onErase, onBack }: { onErase: () => void; onBack: () => void }) {
   const musicVolume = useAudio((s) => s.musicVolume);
   const setMusicVolume = useAudio((s) => s.setMusicVolume);
+  const exposure = useSettings((s) => s.exposure);
+  const setExposure = useSettings((s) => s.setExposure);
 
   return (
     <div className="flex w-64 max-w-[80vw] flex-col gap-3">
-      <VolumeSlider
+      <RangeSlider
         label="Music"
         value={musicVolume}
         onChange={setMusicVolume}
+        min={0}
+        max={1}
+        step={0.01}
+        format={(v) => `${Math.round(v * 100)}`}
       />
+      <RangeSlider
+        label="Brightness"
+        value={exposure}
+        onChange={setExposure}
+        min={0.4}
+        max={1.8}
+        step={0.02}
+        // Show as a percentage relative to default (1.0 = 100). A
+        // dim laptop on battery would crank this to 130–150 to
+        // compensate.
+        format={(v) => `${Math.round(v * 100)}`}
+      />
+      <ControlsLegend />
       <TextButton onClick={onErase} variant="danger">
         Erase Save
       </TextButton>
@@ -129,14 +149,50 @@ function SettingsPanel({ onErase, onBack }: { onErase: () => void; onBack: () =>
   );
 }
 
-function VolumeSlider({
+// Discoverability for the desktop keybinds. Tucked into the settings
+// panel rather than the main menu so first-time mobile players don't
+// see irrelevant keyboard hints.
+function ControlsLegend() {
+  const rows: [string, string][] = [
+    ['Move', 'WASD / Arrows / Hold mouse'],
+    ['Bow', 'E or Space'],
+    ['Menu', 'M or Esc'],
+  ];
+  return (
+    <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3 backdrop-blur">
+      <div className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-pink-200">
+        Controls
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-violet-200">
+        {rows.map(([k, v]) => (
+          <div key={k} className="contents">
+            <dt className="font-bold uppercase tracking-wider text-pink-200/80">{k}</dt>
+            <dd className="tabular-nums">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+// Generic labelled range input. Same pixel-art panel chrome the
+// VolumeSlider used to have; now reused for Brightness too.
+function RangeSlider({
   label,
   value,
   onChange,
+  min,
+  max,
+  step,
+  format,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  format?: (v: number) => string;
 }) {
   return (
     <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3 backdrop-blur">
@@ -145,14 +201,14 @@ function VolumeSlider({
           {label}
         </span>
         <span className="text-xs tabular-nums text-violet-200">
-          {Math.round(value * 100)}
+          {format ? format(value) : value.toFixed(2)}
         </span>
       </div>
       <input
         type="range"
-        min={0}
-        max={1}
-        step={0.01}
+        min={min}
+        max={max}
+        step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="block w-full accent-pink-400"

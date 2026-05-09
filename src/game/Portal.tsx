@@ -7,6 +7,7 @@ import { useEmote } from '@/store/emote';
 import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
 import { useLevel } from '@/store/level';
+import { useSettings } from '@/store/settings';
 import type { LevelId } from './levels';
 
 const TRIGGER_DISTANCE = 3.6;
@@ -106,7 +107,14 @@ export default function Portal({
   // whether the player has the key. Without the key the portal is just
   // decorative — no interaction button, no teleport on bow.
   useFrame((state) => {
-    if (matRef.current) matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    // reduceMotion → freeze the shimmer to a static pose. The portal
+    // is still visible and clearly clickable, just without the swirling
+    // animation.
+    if (matRef.current) {
+      matRef.current.uniforms.uTime.value = useSettings.getState().reduceMotion
+        ? 0
+        : state.clock.elapsedTime;
+    }
 
     const g = groupRef.current;
     if (!g) return;

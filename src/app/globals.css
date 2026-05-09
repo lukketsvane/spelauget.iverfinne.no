@@ -40,6 +40,11 @@ canvas {
 .animate-fade-from-black {
   animation: fade-from-black 2800ms ease-out forwards;
 }
+/* Quick variant for users with prefers-reduced-motion. Same keyframe,
+   shorter duration so the world is on screen almost immediately. */
+.animate-fade-from-black-fast {
+  animation: fade-from-black 600ms ease-out forwards;
+}
 
 /* Cinematic portal teleport — black overlay fades IN (out of view → in
    front), the level swaps under the cover, then fades OUT again. Both
@@ -66,4 +71,22 @@ canvas {
 }
 .animate-teleport-fade-in {
   animation: teleport-fade-in 1400ms ease-out forwards;
+}
+
+/* Pop-in for toast notifications. Slide up + fade in over 220 ms.
+   Toast stays at full opacity and just unmounts when the timer expires
+   — a smarter exit transition isn't worth the complexity for a 3-s
+   self-dismissing pill. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-toast-in {
+  animation: toast-in 220ms ease-out forwards;
 }

@@ -2,13 +2,19 @@
 
 import { useEffect, useRef } from 'react';
 import { useAudio } from '@/store/audio';
+import { useLevel } from '@/store/level';
+import type { LevelId } from './levels';
 
-const PLAYLIST = [
-  '/sounds/ost_01.mp3',
-  '/sounds/ost_02.mp3',
-  '/sounds/ost_03.mp3',
-  '/sounds/ost_04.mp3',
-];
+// Per-level playlists. The two halves of the original score were split
+// roughly by mood: the first two tracks lean toward the warmer
+// magenta-Lysningen vibe; the last two toward the cooler Stjerneengen
+// teal palette. The currently-playing track always finishes — only the
+// NEXT track is picked from the active level's pool, so level changes
+// cross-mood gradually rather than cutting mid-bar.
+const PLAYLISTS: Record<LevelId, string[]> = {
+  level1: ['/sounds/ost_01.mp3', '/sounds/ost_02.mp3'],
+  level2: ['/sounds/ost_03.mp3', '/sounds/ost_04.mp3'],
+};
 const FADE_MS = 4000;
 
 // Background soundtrack. Tries to start on mount so the splash menu
@@ -30,11 +36,18 @@ export default function BackgroundMusic() {
     audioRef.current = audio;
 
     let queue: string[] = [];
+    let queueLevel: LevelId | null = null;
     const refillQueue = () => {
-      queue = [...PLAYLIST].sort(() => Math.random() - 0.5);
+      const level = useLevel.getState().currentLevelId;
+      queue = [...PLAYLISTS[level]].sort(() => Math.random() - 0.5);
+      queueLevel = level;
     };
     const nextTrack = () => {
-      if (queue.length === 0) refillQueue();
+      const currentLevel = useLevel.getState().currentLevelId;
+      // If the player changed level mid-track the queue is now stale —
+      // toss it and refill from the new level's pool. This keeps each
+      // post-transition track on-mood for the level we're actually in.
+      if (queue.length === 0 || queueLevel !== currentLevel) refillQueue();
       const src = queue.shift();
       if (!src) return;
       audio.src = src;
@@ -91,9 +104,25 @@ export default function BackgroundMusic() {
       if (elapsed >= FADE_MS) a.volume = s.musicVolume;
     });
 
+    // Pause music when the tab is backgrounded — there's no point
+    // burning bandwidth on audio the player can't hear, and resuming
+    // mid-track when they come back is more pleasant than restarting
+    // from silence.
+    const onVisibility = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      if (document.visibilityState === 'hidden') {
+        a.pause();
+      } else if (a.paused) {
+        a.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
       cancelAnimationFrame(raf);
       audio.removeEventListener('ended', nextTrack);
+      document.removeEventListener('visibilitychange', onVisibility);
       cleanupListener?.();
       unsub();
     };

@@ -19,6 +19,11 @@ const FADE = 0.25;
 // trying to walk on its own. Drift speed deliberately calmer than the
 // player's walk so they don't lap him.
 const FOLLOW_DISTANCE = 3.5;
+// Hysteresis band: start walking when the gap exceeds FOLLOW_DISTANCE,
+// only stop walking when it falls back below this tighter inner ring.
+// Without it, hovering right at FOLLOW_DISTANCE would flip walk ↔ idle
+// every frame and look like a seizure rather than a follow.
+const STOP_FOLLOW_DISTANCE = FOLLOW_DISTANCE - 0.6;
 const FOLLOW_SPEED = 1.6;
 // Slight speed-up on talking gestures so bobble feels animated, not
 // just a head bobbing in place.
@@ -213,9 +218,13 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
     const dz = playerPosRef.current.z - g.position.z;
     const dist = Math.hypot(dx, dz);
 
-    // Follow drift + walk/idle animation swap.
+    // Follow drift + walk/idle animation swap. Hysteresis keeps the
+    // animation stable when the gap hovers around FOLLOW_DISTANCE: we
+    // only switch to walk above the outer ring and only switch back to
+    // idle below the inner ring.
     if (followingRef.current && clips) {
-      const wantsWalk = dist > FOLLOW_DISTANCE;
+      const wasWalking = followAnimRef.current === 'walk';
+      const wantsWalk = wasWalking ? dist > STOP_FOLLOW_DISTANCE : dist > FOLLOW_DISTANCE;
       const targetAnim: 'idle' | 'walk' = wantsWalk ? 'walk' : 'idle';
       // Swap clips on transition only — never every frame.
       if (followAnimRef.current !== targetAnim) {
@@ -224,11 +233,13 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
           clips.idle?.fadeOut(FADE);
           clips.walk.setLoop(THREE.LoopRepeat, Infinity);
           clips.walk.timeScale = 1;
+          clips.walk.enabled = true;
           clips.walk.reset().fadeIn(FADE).play();
         } else if (targetAnim === 'idle' && clips.idle) {
           clips.walk?.fadeOut(FADE);
           clips.idle.setLoop(THREE.LoopRepeat, Infinity);
           clips.idle.timeScale = 1;
+          clips.idle.enabled = true;
           clips.idle.reset().fadeIn(FADE).play();
         }
       }
@@ -260,6 +271,10 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
 
     // Safety: if no clip is driving the bones (paused tab etc.), restart
     // the active state's primary clip so we never sit at bind pose.
+    // Skip when the desired action is already running — otherwise a
+    // newly-started fadeIn (weight still ramping from 0) gets reset
+    // and re-faded every frame, producing a stutter on the first ~15
+    // frames after each transition.
     if (clips) {
       let desired: THREE.AnimationAction | null = null;
       if (phaseRef.current === 'talking') {
@@ -269,7 +284,7 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
       } else {
         desired = clips.idle;
       }
-      if (desired && desired.getEffectiveWeight() < 0.01) {
+      if (desired && desired.getEffectiveWeight() < 0.01 && !desired.isRunning()) {
         if (phaseRef.current === 'talking') {
           desired.setLoop(THREE.LoopOnce, 1);
           desired.clampWhenFinished = true;
