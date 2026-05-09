@@ -1,7 +1,7 @@
 // Stale-while-revalidate service worker. The shell + heavy assets are
 // pre-cached on install so the game can launch fully offline once visited
 // at least once. Bump CACHE_VERSION when the asset list changes.
-const CACHE_VERSION = 'spelauget-v6';
+const CACHE_VERSION = 'spelauget-v8';
 
 const PRECACHE = [
   '/',
@@ -11,11 +11,16 @@ const PRECACHE = [
   '/menu/bt_new_game.png',
   '/menu/bt_continue.png',
   '/menu/bt_settings.png',
+  '/menu/key_01.png',
+  '/menu/key_02.png',
+  '/menu/coin.png',
+  '/menu/coins.png',
+  '/menu/crystal.png',
   '/models/sligo_01.glb',
   '/models/stjernekarakter.glb',
   '/models/boblehovud.glb',
   '/models/stone_hut.glb',
-  '/models/rock_stack.stl',
+  '/models/rock_stack.glb',
   '/models/trilo.glb',
   '/plante_01.png',
   '/plante_02.png',

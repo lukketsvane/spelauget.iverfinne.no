@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
@@ -62,6 +62,38 @@ export default function Scene() {
   // are GPU-only side effects). Initial mount also runs once so the
   // active palette is applied even on first render.
   const currentLevelId = useLevel((s) => s.currentLevelId);
+
+  // No-plant bubbles around every NPC / prop so the digging character,
+  // huts, rocks, etc. always have a clean ring of bare ground around
+  // them. Recomputed when the level changes; Plants.tsx clears its
+  // chunk cache on this change.
+  const plantExclusions = useMemo(() => {
+    const def = LEVELS[currentLevelId];
+    return def.spawns
+      .filter(
+        (s) =>
+          s.kind === 'star_npc' ||
+          s.kind === 'boble_npc' ||
+          s.kind === 'stone_hut' ||
+          s.kind === 'rock_stack' ||
+          s.kind === 'trilo' ||
+          s.kind === 'portal',
+      )
+      .map((s) => {
+        // Rough per-kind clearance radius. Big NPCs get the widest ring.
+        const r =
+          s.kind === 'star_npc'
+            ? 6
+            : s.kind === 'boble_npc'
+              ? 5
+              : s.kind === 'stone_hut'
+                ? 7
+                : s.kind === 'portal'
+                  ? 4
+                  : 3.5;
+        return { x: s.position[0], z: s.position[1], r };
+      });
+  }, [currentLevelId]);
   useEffect(() => {
     const def = LEVELS[currentLevelId];
     const g = makeGradientTexture(def.groundGradient);
@@ -163,7 +195,7 @@ export default function Scene() {
       <primitive object={lightTargetRef.current} />
 
       <Ground />
-      <Plants playerPosRef={characterPos} />
+      <Plants playerPosRef={characterPos} exclusions={plantExclusions} />
       <Particles playerPosRef={characterPos} />
       <Spawns playerPosRef={characterPos} />
       <Character positionRef={characterPos} />

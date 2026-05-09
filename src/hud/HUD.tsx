@@ -4,22 +4,40 @@ import { useGame } from '@/store/game';
 
 export default function HUD() {
   const hearts = useGame((s) => s.hearts);
+  const coins = useGame((s) => s.coins);
+  const crystals = useGame((s) => s.crystals);
+  const hasKey = useGame((s) => s.hasKey);
   const xp = useGame((s) => s.xp);
   const xpToNext = useGame((s) => s.xpToNext);
 
+  // Build the inventory list dynamically — only items the player has
+  // actually picked up appear under the hearts.
+  const items: { id: string; src: string; count?: number }[] = [];
+  if (hasKey) items.push({ id: 'key', src: '/menu/key_01.png' });
+  if (coins > 0) items.push({ id: 'coins', src: '/menu/coin.png', count: coins });
+  if (crystals > 0)
+    items.push({ id: 'crystals', src: '/menu/crystal.png', count: crystals });
+
   return (
     <div className="pointer-events-none absolute inset-0 select-none">
-      {/* Top-left: hearts */}
+      {/* Top-left: hearts + collected items, stacked vertically. */}
       <div className="absolute left-4 top-4 flex flex-col gap-2 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
         <div className="flex gap-1.5">
           {Array.from({ length: 3 }, (_, i) => (
             <Heart key={i} filled={i < hearts} />
           ))}
         </div>
+        {items.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {items.map((it) => (
+              <InventorySlot key={it.id} src={it.src} count={it.count} alt={it.id} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Top-right: XP */}
-      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+      {/* Top-right: XP. Pushed below the pause button (top-4 right-4). */}
+      <div className="absolute right-4 top-20 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
         <div className="text-xs">
           {xp} / {xpToNext} XP
         </div>
@@ -44,5 +62,38 @@ function Heart({ filled }: { filled: boolean }) {
         strokeWidth="1.5"
       />
     </svg>
+  );
+}
+
+// Pixel-art inventory slot. Pop-in animation on first mount; rerenders
+// don't re-trigger the keyframes (CSS handles that). The optional
+// `count` is shown to the right for stackable items (coins, crystals).
+function InventorySlot({
+  src,
+  alt,
+  count,
+}: {
+  src: string;
+  alt: string;
+  count?: number;
+}) {
+  return (
+    <div
+      className="animate-key-pop flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(255,210,160,0.45)]"
+      title={alt}
+    >
+      <img
+        src={src}
+        alt={alt}
+        width={32}
+        height={32}
+        className="block select-none"
+        style={{ imageRendering: 'pixelated' }}
+        draggable={false}
+      />
+      {count !== undefined && (
+        <span className="text-base font-semibold tabular-nums">×{count}</span>
+      )}
+    </div>
   );
 }

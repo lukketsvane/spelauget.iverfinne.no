@@ -39,12 +39,11 @@ export default function Dialogue() {
 
   const handleAdvance = (e: React.PointerEvent) => {
     e.stopPropagation();
-    if (!isComplete) {
-      // Skip typewriter — show full line immediately.
-      setShown(fullRef.current);
-    } else {
-      useDialogue.getState().next();
-    }
+    // No skipping — the player has to read the whole line. Tap is a
+    // no-op while the typewriter is still running. This also kills the
+    // flicker rapid taps used to cause (skip → advance → restart-empty).
+    if (!isComplete) return;
+    useDialogue.getState().next();
   };
 
   return (

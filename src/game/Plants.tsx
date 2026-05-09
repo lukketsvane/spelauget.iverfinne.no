@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -29,14 +29,19 @@ const PLAYER_SPAWN_SAFE_RADIUS = 3.0;
 
 type Placement = { idx: number; x: number; z: number; scale: number; flip: boolean };
 type Chunk = { key: string; cx: number; cz: number; placements: Placement[] };
-type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
+export type PlantExclusion = { x: number; z: number; r: number };
+type Props = {
+  playerPosRef: MutableRefObject<THREE.Vector3>;
+  // World-space points where plants must NOT spawn (NPCs, props, etc.).
+  exclusions?: PlantExclusion[];
+};
 
 type PlantUniforms = {
   uTime: { value: number };
   uPlayerPos: { value: THREE.Vector3 };
 };
 
-export default function Plants({ playerPosRef }: Props) {
+export default function Plants({ playerPosRef, exclusions }: Props) {
   const textures = useTexture(PLANT_SOURCES.map((p) => p.url));
 
   useMemo(() => {
@@ -107,6 +112,14 @@ export default function Plants({ playerPosRef }: Props) {
   const lastChunk = useRef<{ cx: number; cz: number } | null>(null);
   const [chunks, setChunks] = useState<Map<string, Chunk>>(() => new Map());
 
+  // Reset all loaded chunks whenever the exclusion zones change so the
+  // new "no-plant" rules take effect immediately (e.g. after a level
+  // transition that brings in different NPC / prop positions).
+  useEffect(() => {
+    setChunks(new Map());
+    lastChunk.current = null;
+  }, [exclusions]);
+
   useFrame((state) => {
     // Drive wind + player-push uniforms across every plant material.
     const t = state.clock.elapsedTime;
@@ -141,7 +154,7 @@ export default function Plants({ playerPosRef }: Props) {
       for (const k of desired) {
         if (!next.has(k)) {
           const [cx, cz] = k.split(',').map(Number);
-          next.set(k, { key: k, cx, cz, placements: buildChunk(cx, cz) });
+          next.set(k, { key: k, cx, cz, placements: buildChunk(cx, cz, exclusions) });
           changed = true;
         }
       }
@@ -251,7 +264,11 @@ function applyPlantVertexShader(
   material.needsUpdate = true;
 }
 
-function buildChunk(cx: number, cz: number): Placement[] {
+function buildChunk(
+  cx: number,
+  cz: number,
+  exclusions?: PlantExclusion[],
+): Placement[] {
   const rng = mulberry32(hash2(cx, cz));
   const items: Placement[] = [];
   const count = Math.floor(
@@ -263,6 +280,17 @@ function buildChunk(cx: number, cz: number): Placement[] {
     const wx = cx * CHUNK_SIZE + lx + CHUNK_SIZE / 2;
     const wz = cz * CHUNK_SIZE + lz + CHUNK_SIZE / 2;
     if (Math.hypot(wx, wz) < PLAYER_SPAWN_SAFE_RADIUS) continue;
+    // Skip plants inside any exclusion bubble (NPC bodies, props).
+    let blocked = false;
+    if (exclusions) {
+      for (const e of exclusions) {
+        if (Math.hypot(wx - e.x, wz - e.z) < e.r) {
+          blocked = true;
+          break;
+        }
+      }
+    }
+    if (blocked) continue;
     items.push({
       idx: Math.floor(rng() * PLANT_SOURCES.length),
       x: wx,

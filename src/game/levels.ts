@@ -149,7 +149,6 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         kind: 'stone_hut',
         id: 'l1.hut.center',
         position: [0, -16],
-        scale: 16,
       },
       {
         kind: 'rock_stack',
@@ -209,14 +208,12 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         kind: 'stone_hut',
         id: 'l2.hut.west',
         position: [-12, 4],
-        scale: 14,
         rotation: 0.3,
       },
       {
         kind: 'stone_hut',
         id: 'l2.hut.east',
         position: [12, 4],
-        scale: 14,
         rotation: -0.4,
       },
       {

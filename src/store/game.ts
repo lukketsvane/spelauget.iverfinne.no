@@ -4,27 +4,34 @@ import { persist } from 'zustand/middleware';
 type GameState = {
   hearts: number;
   coins: number;
+  crystals: number;
   level: number;
   xp: number;
   xpToNext: number;
+  // Set when the digging NPC hands the player the key. Gates the
+  // teleporter — portals stay decorative until this is true.
+  hasKey: boolean;
   addCoin: () => void;
+  addCrystal: () => void;
   takeDamage: () => void;
   addXp: (amount: number) => void;
-  // Reset to fresh start values. Used by the New Game button.
+  giveKey: () => void;
   reset: () => void;
 };
 
-// Persisted across reloads. Methods are excluded via partialize so
-// localStorage stays small and the closures aren't lost on rehydrate.
+// Persisted across reloads. Methods are excluded via partialize.
 export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
       hearts: 3,
       coins: 0,
+      crystals: 0,
       level: 1,
       xp: 0,
       xpToNext: 10,
+      hasKey: false,
       addCoin: () => set({ coins: get().coins + 1 }),
+      addCrystal: () => set({ crystals: get().crystals + 1 }),
       takeDamage: () => set({ hearts: Math.max(0, get().hearts - 1) }),
       addXp: (amount) => {
         let { xp, xpToNext, level } = get();
@@ -36,7 +43,17 @@ export const useGame = create<GameState>()(
         }
         set({ xp, xpToNext, level });
       },
-      reset: () => set({ hearts: 3, coins: 0, level: 1, xp: 0, xpToNext: 10 }),
+      giveKey: () => set({ hasKey: true }),
+      reset: () =>
+        set({
+          hearts: 3,
+          coins: 0,
+          crystals: 0,
+          level: 1,
+          xp: 0,
+          xpToNext: 10,
+          hasKey: false,
+        }),
     }),
     {
       name: 'spelauget.game',
@@ -44,9 +61,11 @@ export const useGame = create<GameState>()(
       partialize: (s) => ({
         hearts: s.hearts,
         coins: s.coins,
+        crystals: s.crystals,
         level: s.level,
         xp: s.xp,
         xpToNext: s.xpToNext,
+        hasKey: s.hasKey,
       }),
     },
   ),

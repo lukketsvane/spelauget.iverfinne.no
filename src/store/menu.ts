@@ -7,6 +7,7 @@ type MenuState = {
   inGame: boolean;
   showSettings: boolean;
   startGame: () => void;
+  backToMenu: () => void;
   openSettings: () => void;
   closeSettings: () => void;
 };
@@ -15,6 +16,7 @@ export const useMenu = create<MenuState>((set) => ({
   inGame: false,
   showSettings: false,
   startGame: () => set({ inGame: true, showSettings: false }),
+  backToMenu: () => set({ inGame: false, showSettings: false }),
   openSettings: () => set({ showSettings: true }),
   closeSettings: () => set({ showSettings: false }),
 }));

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useEmote } from '@/store/emote';
+import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
 import { useLevel } from '@/store/level';
 import type { LevelId } from './levels';
@@ -101,7 +102,9 @@ export default function Portal({
     });
   }, [colorA, colorB]);
 
-  // Shimmer animation + claim/release based on player proximity.
+  // Shimmer animation + claim/release based on player proximity AND
+  // whether the player has the key. Without the key the portal is just
+  // decorative — no interaction button, no teleport on bow.
   useFrame((state) => {
     if (matRef.current) matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
 
@@ -110,16 +113,18 @@ export default function Portal({
     const dx = playerPosRef.current.x - g.position.x;
     const dz = playerPosRef.current.z - g.position.z;
     const inRange = Math.hypot(dx, dz) < TRIGGER_DISTANCE;
-    if (inRange) useInteraction.getState().claim(id);
+    const hasKey = useGame.getState().hasKey;
+    if (inRange && hasKey) useInteraction.getState().claim(id);
     else useInteraction.getState().release(id);
   });
 
-  // Subscribe to bow trigger; when player bows in range, change level.
+  // Subscribe to bow trigger; teleport only if the player has the key.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
+      if (!useGame.getState().hasKey) return;
       const g = groupRef.current;
       if (!g) return;
       const dx = playerPosRef.current.x - g.position.x;
