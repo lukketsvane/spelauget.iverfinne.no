@@ -12,7 +12,7 @@ export default function HUD() {
   return (
     <div className="pointer-events-none absolute inset-0 select-none">
       {/* Top-left: hearts + coins */}
-      <div className="absolute left-4 top-4 flex flex-col gap-2 text-neutral-800">
+      <div className="absolute left-4 top-4 flex flex-col gap-2 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
         <div className="flex gap-1.5">
           {Array.from({ length: 3 }, (_, i) => (
             <Heart key={i} filled={i < hearts} />
@@ -24,14 +24,14 @@ export default function HUD() {
       </div>
 
       {/* Top-right: level + XP */}
-      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-neutral-800">
+      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
         <div className="text-lg font-semibold tracking-wide">LV. {level}</div>
         <div className="text-xs">
           {xp} / {xpToNext} XP
         </div>
-        <div className="h-2 w-32 overflow-hidden rounded-sm border border-neutral-700 bg-white">
+        <div className="h-2 w-32 overflow-hidden rounded-sm border border-violet-300/60 bg-violet-950/60">
           <div
-            className="h-full bg-neutral-700 transition-[width] duration-200"
+            className="h-full bg-gradient-to-r from-pink-400 to-violet-300 transition-[width] duration-200"
             style={{ width: `${Math.min(100, (xp / xpToNext) * 100)}%` }}
           />
         </div>
