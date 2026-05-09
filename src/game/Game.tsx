@@ -7,6 +7,7 @@ import Scene from './Scene';
 import HUD from '@/hud/HUD';
 import EmoteButton from '@/hud/EmoteButton';
 import Dialogue from '@/hud/Dialogue';
+import LevelLabel from '@/hud/LevelLabel';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 import ServiceWorker from './ServiceWorker';
@@ -42,6 +43,7 @@ export default function Game() {
       <PointerInput />
       <EmoteButton />
       <Dialogue />
+      <LevelLabel />
       <ServiceWorker />
     </>
   );
