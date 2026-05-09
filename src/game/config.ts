@@ -20,17 +20,10 @@ export const CHARACTER = {
   fadeSeconds: 0.18,
 } as const;
 
-// The GLB ships with Blender NLA tracks named generically. Map them to roles
-// here; tweak indices/names if the bank order changes.
-//   "NlaTrack"     6.00s  → idle (long, calm cycle)
-//   "NlaTrack.001" 2.25s  → walk
-//   "NlaTrack.002" 2.38s  → run
-//   "NlaTrack.003" 6.00s  → extra (action / cheer)
-export const ANIM = {
-  idle: 'NlaTrack',
-  walk: 'NlaTrack.001',
-  run: 'NlaTrack.002',
-  extra: 'NlaTrack.003',
-} as const;
+// Animation roles are picked at runtime by clip duration in Character.tsx
+// (shortest = run, middle = walk, longest = idle). The GLB's NLA tracks are
+// named generically ("NlaTrack", "NlaTrack.001", …) so name-mapping isn't
+// reliable across re-exports. Open the browser console — Character logs the
+// resolved mapping on mount.
 
 export const STARFISH_URL = '/models/starfish.glb';
