@@ -1,12 +1,12 @@
 // Tweakables in one place so the look/feel is easy to dial in.
 
 export const CAMERA = {
-  // Iso-ish: equal X/Z offsets for 45° azimuth, lower Y for a flatter pitch
-  // that "sees more" of the world ahead of the player.
-  offset: { x: 14, y: 11, z: 14 },
-  // Larger = more world visible. Bumped up so the player can see plants
-  // around them before walking into them.
-  viewSize: 20,
+  // Iso-ish: equal X/Z offsets for 45° azimuth. Y kept noticeably lower
+  // than the horizontal so the pitch is flatter — the player can see more
+  // of the world in the distance instead of looking straight down.
+  offset: { x: 14, y: 9, z: 14 },
+  // Ortho frustum height in world units. Larger = more visible world.
+  viewSize: 18,
   // 0..1 — how snappy the camera follow is. 0.12 ≈ smooth but responsive.
   followLerp: 0.12,
 } as const;
@@ -22,10 +22,9 @@ export const CHARACTER = {
   // Visual scale applied to the GLB.
   scale: 2.0,
   // Radians added to move-direction yaw to compensate for the GLB's local
-  // forward axis. Sligo (Tripo export) faces local +X in bind pose, so we
-  // rotate -π/2 to align with three.js convention. Try 0, π, ±π/2 if a
-  // future model points in another direction.
-  modelForwardYaw: -Math.PI / 2,
+  // forward axis. Sligo's mesh has local +Z as the visual front, so no
+  // offset is needed. Try π, ±π/2 if a future model points elsewhere.
+  modelForwardYaw: 0,
 } as const;
 
 // Animation roles are picked at runtime by clip duration in Character.tsx:

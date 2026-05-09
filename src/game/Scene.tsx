@@ -92,12 +92,12 @@ export default function Scene() {
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-left={-18}
-        shadow-camera-right={18}
-        shadow-camera-top={18}
-        shadow-camera-bottom={-18}
+        shadow-camera-left={-22}
+        shadow-camera-right={22}
+        shadow-camera-top={22}
+        shadow-camera-bottom={-22}
         shadow-camera-near={0.1}
-        shadow-camera-far={60}
+        shadow-camera-far={70}
         shadow-bias={-0.0005}
         target={lightTargetRef.current}
       />

@@ -9,6 +9,7 @@ const PLANT_SOURCES = [
   { url: '/plante_01.png', height: 2.4 },
   { url: '/plante_02.png', height: 3.0 },
   { url: '/plante_03.png', height: 4.2 },
+  { url: '/plante_04.png', height: 4.0 },
   { url: '/plante._01.png', height: 2.2 },
 ] as const;
 
