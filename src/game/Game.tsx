@@ -20,9 +20,13 @@ export default function Game() {
           powerPreference: 'high-performance',
         }}
         onCreated={({ gl }) => {
-          gl.toneMapping = THREE.NoToneMapping;
+          // ACES tonemapping rolls the bloom highlights off cleanly instead
+          // of clipping to flat white; sRGB output keeps gradient ramps
+          // looking like the design intent.
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.0;
           gl.outputColorSpace = THREE.SRGBColorSpace;
-          gl.setClearColor('#ffffff', 1);
+          gl.setClearColor('#0a0418', 1);
         }}
         camera={{ position: [10, 10, 10], near: 0.1, far: 200 }}
       >

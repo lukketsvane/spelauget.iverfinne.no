@@ -3,14 +3,20 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
+import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
+import Particles from './Particles';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 
 const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
+
+// Background colour and fog match — distant geometry blends into the
+// horizon for a deeper, more atmospheric feel.
+const NIGHT = '#0a0418';
 
 export default function Scene() {
   const camRef = useRef<THREE.OrthographicCamera>(null);
@@ -21,8 +27,6 @@ export default function Scene() {
 
   const { size, gl } = useThree();
 
-  // Push the camera + canvas element into the input store so the HTML
-  // pointer overlay can raycast tap positions to the ground plane.
   const setCamera = useInput((s) => s.setCamera);
   const setCanvasEl = useInput((s) => s.setCanvasEl);
   useEffect(() => {
@@ -30,10 +34,6 @@ export default function Scene() {
     return () => setCanvasEl(null);
   }, [gl.domElement, setCanvasEl]);
 
-  // Imperatively rebuild the orthographic frustum on every resize and
-  // expose the camera. Without this update the projection stays locked
-  // to the initial aspect ratio and the scene squeezes when the window
-  // changes shape.
   useEffect(() => {
     const cam = camRef.current;
     if (!cam) return;
@@ -74,6 +74,10 @@ export default function Scene() {
 
   return (
     <>
+      {/* Atmospheric fog: distant trees fade into the night sky. */}
+      <fog attach="fog" args={[NIGHT, 24, 60]} />
+      <color attach="background" args={[NIGHT]} />
+
       <OrthographicCamera
         ref={camRef}
         makeDefault
@@ -83,12 +87,15 @@ export default function Scene() {
         position={[CAMERA.offset.x, CAMERA.offset.y, CAMERA.offset.z]}
       />
 
-      <ambientLight intensity={1.1} />
-      <hemisphereLight args={['#ffffff', '#e6e6e6', 0.4]} />
+      {/* Cool low ambient + violet hemisphere = night gloom. The directional
+          key light is cooled and dimmed so the scene reads moonlit. */}
+      <ambientLight intensity={0.45} color="#5a4a8a" />
+      <hemisphereLight args={['#7c5fb8', '#0a0418', 0.55]} />
       <directionalLight
         ref={lightRef}
         position={[LIGHT_OFFSET.x, LIGHT_OFFSET.y, LIGHT_OFFSET.z]}
-        intensity={1.4}
+        intensity={0.85}
+        color="#cdb6ff"
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -105,7 +112,19 @@ export default function Scene() {
 
       <Ground />
       <Plants playerPosRef={characterPos} />
+      <Particles playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
+
+      {/* Bloom lifts the gradient-mapped highlights and HDR particles into
+          a soft glow — the single biggest contributor to the moody look. */}
+      <EffectComposer>
+        <Bloom
+          intensity={0.9}
+          luminanceThreshold={0.55}
+          luminanceSmoothing={0.4}
+          mipmapBlur
+        />
+      </EffectComposer>
     </>
   );
 }

@@ -7,7 +7,8 @@ body,
 #__next {
   height: 100%;
   margin: 0;
-  background: #ffffff;
+  background: #0a0418;
+  color: #cbb8e8;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
