@@ -1,11 +1,12 @@
 // Tweakables in one place so the look/feel is easy to dial in.
 
 export const CAMERA = {
-  // Classic isometric: equal X and Z offsets so the angle is 45° in plan,
-  // with a generous Y to look down at ~35°. Offsets are added to the character.
-  offset: { x: 12, y: 14, z: 12 },
-  // Larger = zoomed out. Tuned for the screenshot framing.
-  viewSize: 14,
+  // Iso-ish: equal X/Z offsets for 45° azimuth, lower Y for a flatter pitch
+  // that "sees more" of the world ahead of the player.
+  offset: { x: 14, y: 11, z: 14 },
+  // Larger = more world visible. Bumped up so the player can see plants
+  // around them before walking into them.
+  viewSize: 20,
   // 0..1 — how snappy the camera follow is. 0.12 ≈ smooth but responsive.
   followLerp: 0.12,
 } as const;
@@ -20,6 +21,10 @@ export const CHARACTER = {
   fadeSeconds: 0.18,
   // Visual scale applied to the GLB.
   scale: 2.0,
+  // Radians added to the move-direction yaw to compensate for the GLB's
+  // local "forward" axis. Most rigged characters have local -Z forward, so
+  // π is a common starting value. Try 0, π, ±π/2 if facing is off.
+  modelForwardYaw: Math.PI,
 } as const;
 
 // Animation roles are picked at runtime by clip duration in Character.tsx
