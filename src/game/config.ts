@@ -27,10 +27,17 @@ export const CHARACTER = {
   modelForwardYaw: Math.PI,
 } as const;
 
-// Animation roles are picked at runtime by clip duration in Character.tsx
-// (shortest = run, middle = walk, longest = idle). The GLB's NLA tracks are
-// named generically ("NlaTrack", "NlaTrack.001", …) so name-mapping isn't
-// reliable across re-exports. Open the browser console — Character logs the
-// resolved mapping on mount.
+// Animation roles are picked at runtime by clip duration in Character.tsx:
+//   shortest                   → run
+//   second-shortest            → walk
+//   longest                    → idle (long, expressive cycle)
+//   the remaining (4th) clip   → "extra" emote (one-shot, on demand)
+// The GLB's NLA tracks come through as generic "NlaTrack[.NNN]" names, so
+// name-based mapping isn't portable. Character.tsx logs the resolved
+// mapping on mount — open devtools console to see it.
 
-export const STARFISH_URL = '/models/starfish.glb';
+export const PLAYER_MODEL_URL = '/models/sligo.glb';
+
+// How long the character must stay idle before a random emote fires, in
+// seconds. Picks uniformly inside the range each time.
+export const EMOTE_IDLE_RANGE: [number, number] = [5, 9];

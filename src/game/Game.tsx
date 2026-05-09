@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import * as THREE from 'three';
 import Scene from './Scene';
 import HUD from '@/hud/HUD';
+import EmoteButton from '@/hud/EmoteButton';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 
@@ -32,6 +33,7 @@ export default function Game() {
       <KeyboardInput />
       <HUD />
       <PointerInput />
+      <EmoteButton />
     </>
   );
 }
