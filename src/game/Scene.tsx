@@ -12,7 +12,9 @@ import Spawns from './Spawns';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
-import { updateGradientUniforms } from './gradients';
+import { makeGradientTexture, setGradientTexture, updateGradientUniforms } from './gradients';
+import { LEVELS } from './levels';
+import { useLevel } from '@/store/level';
 
 const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 
@@ -54,6 +56,26 @@ export default function Scene() {
     cam.updateProjectionMatrix();
     setCamera(cam);
   }, [size.width, size.height, setCamera]);
+
+  // Swap gradient textures whenever the level changes. Subscribing
+  // imperatively avoids React state for the gradient (uniform writes
+  // are GPU-only side effects). Initial mount also runs once so the
+  // active palette is applied even on first render.
+  const currentLevelId = useLevel((s) => s.currentLevelId);
+  useEffect(() => {
+    const def = LEVELS[currentLevelId];
+    const g = makeGradientTexture(def.groundGradient);
+    const p = makeGradientTexture(def.plantGradient);
+    const h = makeGradientTexture(def.plantHaloGradient);
+    setGradientTexture('ground', g);
+    setGradientTexture('plant', p);
+    setGradientTexture('plant_halo', h);
+    return () => {
+      g.dispose();
+      p.dispose();
+      h.dispose();
+    };
+  }, [currentLevelId]);
 
   useFrame(() => {
     target.current.lerp(characterPos.current, CAMERA.followLerp);

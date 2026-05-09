@@ -3,7 +3,9 @@
 import { useEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { applyGradientMap, GROUND_GRADIENT, makeGradientTexture } from './gradients';
+import { applyGradientMap, makeGradientTexture } from './gradients';
+import { LEVELS } from './levels';
+import { useLevel } from '@/store/level';
 
 const GROUND_TEXTURES = ['/ny_bakke_01.png', '/ny_bakke_02.png', '/ny_bakke_03.png'];
 const GROUND_SIZE = 400;
@@ -30,7 +32,12 @@ export default function Ground() {
     }
   }, [textures]);
 
-  const gradientTex = useMemo(() => makeGradientTexture(GROUND_GRADIENT), []);
+  // Use level1's palette as the initial gradient — Scene swaps it to the
+  // active level's palette on mount + on every level change.
+  const gradientTex = useMemo(
+    () => makeGradientTexture(LEVELS[useLevel.getState().currentLevelId].groundGradient),
+    [],
+  );
 
   const material = useMemo(() => {
     const m = new THREE.MeshLambertMaterial({
@@ -44,7 +51,7 @@ export default function Ground() {
       emissiveMap: textures[0],
     });
 
-    applyGradientMap(m, gradientTex);
+    applyGradientMap(m, gradientTex, 'ground');
 
     // Now extend the patched material with stochastic three-texture
     // sampling. We chain on top of applyGradientMap's onBeforeCompile —

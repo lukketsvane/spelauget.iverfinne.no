@@ -59,9 +59,14 @@ export default function PointerInput() {
     const wdz = dz / dist;
     // Inverse of the iso world→screen-input rotation Character uses.
     const c = Math.SQRT1_2;
-    const mx = (wdx - wdz) * c;
-    const my = -(wdx + wdz) * c;
-    useInput.getState().setMove(mx, my);
+    const ux = (wdx - wdz) * c;
+    const uy = -(wdx + wdz) * c;
+    // Magnitude scales with cursor distance so the character walks when
+    // the cursor is close and breaks into a run further out. Character
+    // animation switches to "run" at mag > 0.85 — that crosses around
+    // dist ≈ 2.7 m here.
+    const mag = Math.min(1, 0.5 + (dist - CURSOR_DEAD_ZONE) / 4.0);
+    useInput.getState().setMove(ux * mag, uy * mag);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Photoshop-style gradient map: each stop is [position 0..1, hex color].
-type Stop = [number, string];
+export type Stop = [number, string];
 
 // Build a 1D RGBA texture by interpolating between stops. Gets sampled in
 // shaders with vec2(luminance, 0.5) to remap a grayscale value to a colour.
@@ -59,13 +59,17 @@ export function makeGradientTexture(stops: Stop[], width = 256): THREE.DataTextu
   return tex;
 }
 
-// All gradient-mapped materials register their per-cycle uniforms here so
-// a single useFrame call from Scene can drive day/night for every surface
-// at once. Materials live for the lifetime of the app, so growing this
-// list isn't a leak in practice.
+// All gradient-mapped materials register their uniforms here so we can
+// drive day/night and per-level palette swaps for every surface at
+// once. `role` tags ground vs plant vs plant-halo so the level
+// transition can swap them independently.
+export type GradientRole = 'ground' | 'plant' | 'plant_halo';
+
 type GradientUniforms = {
   uHueAngle: { value: number };
   uBrightness: { value: number };
+  gradientMap: { value: THREE.Texture };
+  role: GradientRole;
 };
 const REGISTRY: GradientUniforms[] = [];
 
@@ -76,12 +80,25 @@ export function updateGradientUniforms(hueAngle: number, brightness: number) {
   }
 }
 
+// Swap the gradient texture used by every material registered under
+// the given role. Used on level transition to re-skin the world without
+// recompiling shaders.
+export function setGradientTexture(role: GradientRole, texture: THREE.Texture) {
+  for (const u of REGISTRY) {
+    if (u.role === role) u.gradientMap.value = texture;
+  }
+}
+
 // Patches a material's <map_fragment> shader chunk to remap the sampled
 // texture's luminance through a 1D gradient texture, then rotates the
 // hue and scales the brightness based on shared day-cycle uniforms.
 // Works for any material that includes the standard map_fragment chunk
 // (Lambert, Basic, Standard, Phong).
-export function applyGradientMap(material: THREE.Material, gradient: THREE.Texture) {
+export function applyGradientMap(
+  material: THREE.Material,
+  gradient: THREE.Texture,
+  role: GradientRole,
+) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.gradientMap = { value: gradient };
     shader.uniforms.uHueAngle = { value: 0 };
@@ -89,6 +106,8 @@ export function applyGradientMap(material: THREE.Material, gradient: THREE.Textu
     REGISTRY.push({
       uHueAngle: shader.uniforms.uHueAngle,
       uBrightness: shader.uniforms.uBrightness,
+      gradientMap: shader.uniforms.gradientMap,
+      role,
     });
 
     shader.fragmentShader =
@@ -125,34 +144,3 @@ export function applyGradientMap(material: THREE.Material, gradient: THREE.Textu
   material.needsUpdate = true;
 }
 
-// --- Curated gradient ramps for the moody bioluminescent look ----------
-
-// Ground is bright enough that the tile pattern is always readable, even
-// at the darkest part of the day cycle and inside cast shadows.
-export const GROUND_GRADIENT: Stop[] = [
-  [0.0, '#6b4f95'],
-  [0.35, '#9075b0'],
-  [0.7, '#b9a0d2'],
-  [1.0, '#e8d5f0'],
-];
-
-// Plants get a vibrant ramp: deep indigo body → magenta mids → near-white
-// highlights, so even mostly-dark inky source PNGs read as glowing flora.
-export const PLANT_GRADIENT: Stop[] = [
-  [0.0, '#241048'],
-  [0.35, '#7a2db3'],
-  [0.65, '#d35ab8'],
-  [0.85, '#ff9bd6'],
-  [1.0, '#ffe3f2'],
-];
-
-// Additive halo pass on top of each plant: only the brighter half of the
-// source contributes, and we map it into hot magentas so the silhouettes
-// glow against the night without needing a bloom post-process.
-export const PLANT_HALO_GRADIENT: Stop[] = [
-  [0.0, '#000000'],
-  [0.55, '#000000'],
-  [0.7, '#5e1c83'],
-  [0.85, '#ff5fc0'],
-  [1.0, '#ffd2ec'],
-];

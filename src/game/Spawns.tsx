@@ -4,26 +4,26 @@ import { useEffect, useMemo, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { useLevel } from '@/store/level';
 import { useInteraction } from '@/store/interaction';
-import { LEVELS, parseLevelSpawns } from './levels';
+import { LEVELS } from './levels';
 import StarNpc from './StarNpc';
+import BobleNpc from './BobleNpc';
 import Portal from './Portal';
 import StoneHut from './StoneHut';
 import RockStack from './RockStack';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
-// Reads the active level definition and mounts a component per spawn
-// cell. Components are keyed by stable spawn id, so React unmounts the
-// old level's entities cleanly when the level changes — useful for
-// freeing GLB clones, dialogue state, animation mixers, etc.
+// Reads the active level definition and mounts a component per spawn.
+// Keys are stable (spawn.id), so React unmounts the old level's
+// entities cleanly when the level changes — useful for freeing GLB
+// clones, mixer state, dialogue subscriptions, etc.
 export default function Spawns({ playerPosRef }: Props) {
   const currentLevelId = useLevel((s) => s.currentLevelId);
+  const spawns = useMemo(() => LEVELS[currentLevelId].spawns, [currentLevelId]);
 
-  const spawns = useMemo(() => parseLevelSpawns(LEVELS[currentLevelId]), [currentLevelId]);
-
-  // Reset interaction claim slot whenever the level changes — old owners
-  // are about to unmount and would race with the new ones for the slot.
   useEffect(() => {
+    // Old owners are about to unmount — release the slot so the new
+    // level's entities can claim it cleanly.
     useInteraction.getState().reset();
   }, [currentLevelId]);
 
@@ -36,38 +36,52 @@ export default function Spawns({ playerPosRef }: Props) {
               <StarNpc
                 key={s.id}
                 id={s.id}
-                position={[s.x, 0, s.z]}
+                position={[s.position[0], 0, s.position[1]]}
+                dialogue={s.dialogue}
                 playerPosRef={playerPosRef}
               />
             );
-          case 'portal_to_level1':
+          case 'boble_npc':
+            return (
+              <BobleNpc
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                dialogue={s.dialogue}
+                playerPosRef={playerPosRef}
+              />
+            );
+          case 'portal':
             return (
               <Portal
                 key={s.id}
                 id={s.id}
-                position={[s.x, 2.4, s.z]}
-                targetLevel="level1"
+                position={[s.position[0], 2.4, s.position[1]]}
+                targetLevel={s.targetLevel}
                 playerPosRef={playerPosRef}
-                colorA="#a4d8ff"
-                colorB="#3a4cff"
-              />
-            );
-          case 'portal_to_level2':
-            return (
-              <Portal
-                key={s.id}
-                id={s.id}
-                position={[s.x, 2.4, s.z]}
-                targetLevel="level2"
-                playerPosRef={playerPosRef}
+                colorA={s.colorA}
+                colorB={s.colorB}
               />
             );
           case 'stone_hut':
-            return <StoneHut key={s.id} position={[s.x, 0, s.z]} />;
+            return (
+              <StoneHut
+                key={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                scale={s.scale}
+                rotationY={s.rotation}
+              />
+            );
           case 'rock_stack':
-            return <RockStack key={s.id} position={[s.x, 0, s.z]} />;
+            return (
+              <RockStack
+                key={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                scale={s.scale}
+                rotationY={s.rotation}
+              />
+            );
           default:
-            // 'player_spawn' / 'empty' — no entity rendered.
             return null;
         }
       })}

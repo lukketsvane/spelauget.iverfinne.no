@@ -4,12 +4,9 @@ import { useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import {
-  applyGradientMap,
-  makeGradientTexture,
-  PLANT_GRADIENT,
-  PLANT_HALO_GRADIENT,
-} from './gradients';
+import { applyGradientMap, makeGradientTexture } from './gradients';
+import { LEVELS } from './levels';
+import { useLevel } from '@/store/level';
 
 // height = world units tall.
 // wind   = sway amplitude on the top of the sprite (0 = stiff stem, 1 = leafy).
@@ -66,8 +63,16 @@ export default function Plants({ playerPosRef }: Props) {
   // shared time + player position without rebinding ref hooks.
   const uniformList = useRef<PlantUniforms[]>([]);
 
-  const gradientTex = useMemo(() => makeGradientTexture(PLANT_GRADIENT), []);
-  const haloTex = useMemo(() => makeGradientTexture(PLANT_HALO_GRADIENT), []);
+  // Initial gradient from current level — Scene's effect will swap to
+  // the active palette on mount + every level change.
+  const gradientTex = useMemo(
+    () => makeGradientTexture(LEVELS[useLevel.getState().currentLevelId].plantGradient),
+    [],
+  );
+  const haloTex = useMemo(
+    () => makeGradientTexture(LEVELS[useLevel.getState().currentLevelId].plantHaloGradient),
+    [],
+  );
 
   const materials = useMemo(() => {
     uniformList.current = [];
@@ -79,7 +84,7 @@ export default function Plants({ playerPosRef }: Props) {
         side: THREE.DoubleSide,
         toneMapped: false,
       });
-      applyGradientMap(base, gradientTex);
+      applyGradientMap(base, gradientTex, 'plant');
       applyPlantVertexShader(base, src.wind, src.pushable, uniformList);
 
       const halo = new THREE.MeshBasicMaterial({
@@ -90,7 +95,7 @@ export default function Plants({ playerPosRef }: Props) {
         side: THREE.DoubleSide,
         toneMapped: false,
       });
-      applyGradientMap(halo, haloTex);
+      applyGradientMap(halo, haloTex, 'plant_halo');
       // Halo gets the SAME vertex displacement so the additive layer
       // tracks the base sprite exactly while it sways.
       applyPlantVertexShader(halo, src.wind, src.pushable, uniformList);

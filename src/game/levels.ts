@@ -1,123 +1,223 @@
-// Pixel-grid level format. Each character in a row is one cell of the
-// world. The grid is centred on world origin (0,0). Add new levels here
-// — the rest of the game is data-driven from this map.
+// Level definitions are pure data. Each level has a palette and a list
+// of spawns; the rest of the game is driven from this map.
 //
-// Symbol → entity:
-//   .  empty (open ground)
-//   @  player spawn point (only one per level)
-//   N  star NPC
-//   #  stone hut
-//   r  rock stack
-//   1  portal to level1
-//   2  portal to level2
+// Adding a new level:
+//   1. Add a key to LEVELS with id/name/palette/playerSpawn/spawns.
+//   2. Reference the level by id from a portal's targetLevel field.
+//   3. (Optional) override gradient stops with a distinct mood palette.
 //
-// Edit by hand or paint visually; rows must be the same length.
+// Adding a new spawn kind:
+//   1. Add the variant to the Spawn union below.
+//   2. Add a case in Spawns.tsx that mounts the matching component.
+//
+// Coordinates are in world units (metres). The grid is centred on world
+// origin so positive X = east, positive Z = south. A 0.5 m tweak on a
+// position is fine, no need to align to grid lines.
 
-export const LEVEL_CELL_SIZE = 4; // world units per grid cell
+import type { DialogueLine } from '@/store/dialogue';
+import type { Stop } from './gradients';
 
-export type CellKind =
-  | 'empty'
-  | 'player_spawn'
-  | 'star_npc'
-  | 'stone_hut'
-  | 'rock_stack'
-  | 'portal_to_level1'
-  | 'portal_to_level2';
+export type LevelId = 'level1' | 'level2';
 
-const CELL_MAP: Record<string, CellKind> = {
-  '.': 'empty',
-  '@': 'player_spawn',
-  N: 'star_npc',
-  '#': 'stone_hut',
-  r: 'rock_stack',
-  '1': 'portal_to_level1',
-  '2': 'portal_to_level2',
+export type StarNpcSpawn = {
+  kind: 'star_npc';
+  id: string;
+  position: [number, number]; // [x, z]
+  dialogue: DialogueLine[];
 };
+
+export type BobleNpcSpawn = {
+  kind: 'boble_npc';
+  id: string;
+  position: [number, number];
+  dialogue: DialogueLine[];
+};
+
+export type PortalSpawn = {
+  kind: 'portal';
+  id: string;
+  position: [number, number];
+  targetLevel: LevelId;
+  colorA?: string;
+  colorB?: string;
+};
+
+export type StoneHutSpawn = {
+  kind: 'stone_hut';
+  id: string;
+  position: [number, number];
+  scale?: number;
+  rotation?: number;
+};
+
+export type RockStackSpawn = {
+  kind: 'rock_stack';
+  id: string;
+  position: [number, number];
+  scale?: number;
+  rotation?: number;
+};
+
+export type Spawn =
+  | StarNpcSpawn
+  | BobleNpcSpawn
+  | PortalSpawn
+  | StoneHutSpawn
+  | RockStackSpawn;
 
 export type LevelDefinition = {
-  id: string;
+  id: LevelId;
   name: string;
-  rows: string[];
+  groundGradient: Stop[];
+  plantGradient: Stop[];
+  plantHaloGradient: Stop[];
+  playerSpawn: { x: number; z: number };
+  spawns: Spawn[];
 };
 
-export const LEVELS = {
+// --- Level 1 — Lysningen — moody violet/magenta -------------------------
+const LYSNINGEN_GROUND: Stop[] = [
+  [0.0, '#6b4f95'],
+  [0.35, '#9075b0'],
+  [0.7, '#b9a0d2'],
+  [1.0, '#e8d5f0'],
+];
+const LYSNINGEN_PLANT: Stop[] = [
+  [0.0, '#241048'],
+  [0.35, '#7a2db3'],
+  [0.65, '#d35ab8'],
+  [0.85, '#ff9bd6'],
+  [1.0, '#ffe3f2'],
+];
+const LYSNINGEN_HALO: Stop[] = [
+  [0.0, '#000000'],
+  [0.55, '#000000'],
+  [0.7, '#5e1c83'],
+  [0.85, '#ff5fc0'],
+  [1.0, '#ffd2ec'],
+];
+
+// --- Level 2 — Stjerneengen — cool aqua/teal ----------------------------
+const STJERNE_GROUND: Stop[] = [
+  [0.0, '#1f4658'],
+  [0.35, '#3b758a'],
+  [0.7, '#7ab2c0'],
+  [1.0, '#c7e8ec'],
+];
+const STJERNE_PLANT: Stop[] = [
+  [0.0, '#062840'],
+  [0.35, '#1b6e94'],
+  [0.6, '#2eb6b8'],
+  [0.85, '#7ff0d4'],
+  [1.0, '#e8fff5'],
+];
+const STJERNE_HALO: Stop[] = [
+  [0.0, '#000000'],
+  [0.55, '#000000'],
+  [0.7, '#0f4a6e'],
+  [0.85, '#3df0d8'],
+  [1.0, '#ddfff8'],
+];
+
+export const LEVELS: Record<LevelId, LevelDefinition> = {
   level1: {
     id: 'level1',
     name: 'Lysningen',
-    rows: [
-      '..............',
-      '..............',
-      '......#.......',
-      '..............',
-      '.....N........',
-      '..............',
-      '......@.......',
-      '..............',
-      '......r.......',
-      '..............',
-      '..............',
-      '.........2....',
-      '..............',
-      '..............',
+    groundGradient: LYSNINGEN_GROUND,
+    plantGradient: LYSNINGEN_PLANT,
+    plantHaloGradient: LYSNINGEN_HALO,
+    playerSpawn: { x: 0, z: 0 },
+    spawns: [
+      {
+        kind: 'stone_hut',
+        id: 'l1.hut.center',
+        position: [0, -16],
+        scale: 1.6,
+      },
+      {
+        kind: 'rock_stack',
+        id: 'l1.rock.south',
+        position: [0, 8],
+      },
+      {
+        kind: 'star_npc',
+        id: 'l1.star.welcome',
+        position: [-4, -8],
+        dialogue: [
+          { text: 'hei velkommen til VITTA TIL IDA NEVERDAHL!' },
+          { text: 'HER ER DET JÆVKIG GOD PLASS' },
+          { text: 'IDA ER EN JÆVLA HORE' },
+        ],
+      },
+      {
+        kind: 'portal',
+        id: 'l1.portal.to.l2',
+        position: [12, 16],
+        targetLevel: 'level2',
+      },
     ],
   },
+
   level2: {
     id: 'level2',
     name: 'Stjerneengen',
-    rows: [
-      '..............',
-      '...1..........',
-      '..............',
-      '..............',
-      '......@.......',
-      '..............',
-      '...#....#.....',
-      '..............',
-      '......r.......',
-      '..............',
-      '......N.......',
-      '..............',
-      '..............',
-      '..............',
+    groundGradient: STJERNE_GROUND,
+    plantGradient: STJERNE_PLANT,
+    plantHaloGradient: STJERNE_HALO,
+    playerSpawn: { x: 0, z: 0 },
+    spawns: [
+      {
+        kind: 'portal',
+        id: 'l2.portal.to.l1',
+        position: [-12, -20],
+        targetLevel: 'level1',
+        colorA: '#a4d8ff',
+        colorB: '#3a4cff',
+      },
+      {
+        kind: 'stone_hut',
+        id: 'l2.hut.west',
+        position: [-12, 4],
+        scale: 1.4,
+        rotation: 0.3,
+      },
+      {
+        kind: 'stone_hut',
+        id: 'l2.hut.east',
+        position: [12, 4],
+        scale: 1.4,
+        rotation: -0.4,
+      },
+      {
+        kind: 'rock_stack',
+        id: 'l2.rock.center',
+        position: [0, 8],
+      },
+      {
+        kind: 'star_npc',
+        id: 'l2.star.elder',
+        position: [0, 16],
+        dialogue: [
+          { text: 'her er det enno blåare enn der borte' },
+          { text: 'om du går langt nok, kjem du fram til verdsenden' },
+          { text: 'eller kanskje berre tilbake til Lysningen' },
+        ],
+      },
+      {
+        kind: 'boble_npc',
+        id: 'l2.boble.bobble',
+        position: [8, -8],
+        dialogue: [
+          { text: 'hei eg heiter Bobble' },
+          { text: 'velkommen til Stjerneengen' },
+          { text: 'her snur lyset blått om natta' },
+          { text: 'ein dag finn du kanskje vegen heim' },
+        ],
+      },
     ],
   },
-} as const satisfies Record<string, LevelDefinition>;
-
-export type LevelId = keyof typeof LEVELS;
-
-export type Spawn = {
-  kind: CellKind;
-  x: number; // world units
-  z: number;
-  // Stable id so React keys + interaction claims don't collide.
-  id: string;
 };
 
-export function parseLevelSpawns(level: LevelDefinition): Spawn[] {
-  const rows = level.rows;
-  const height = rows.length;
-  const width = rows[0]?.length ?? 0;
-  // Centre the grid on world origin.
-  const offsetX = (width - 1) / 2;
-  const offsetZ = (height - 1) / 2;
-  const spawns: Spawn[] = [];
-  for (let r = 0; r < height; r++) {
-    for (let c = 0; c < rows[r].length; c++) {
-      const ch = rows[r][c];
-      const kind = CELL_MAP[ch];
-      if (!kind || kind === 'empty') continue;
-      spawns.push({
-        kind,
-        x: (c - offsetX) * LEVEL_CELL_SIZE,
-        z: (r - offsetZ) * LEVEL_CELL_SIZE,
-        id: `${level.id}:${kind}:${c},${r}`,
-      });
-    }
-  }
-  return spawns;
-}
-
 export function findPlayerSpawn(level: LevelDefinition): { x: number; z: number } {
-  const found = parseLevelSpawns(level).find((s) => s.kind === 'player_spawn');
-  return found ? { x: found.x, z: found.z } : { x: 0, z: 0 };
+  return level.playerSpawn;
 }
