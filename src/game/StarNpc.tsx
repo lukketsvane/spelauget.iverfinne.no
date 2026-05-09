@@ -5,12 +5,13 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import { useDialogue, type DialogueLine } from '@/store/dialogue';
+import { useEmote } from '@/store/emote';
 
 const URL = '/models/stjernekarakter.glb';
-const SPAWN_X = 5;
-const SPAWN_Z = 5;
-const TRIGGER_DISTANCE = 3.2;
-const SCALE = 3.0;
+const SPAWN_X = 6;
+const SPAWN_Z = 6;
+const TRIGGER_DISTANCE = 4.5;
+const SCALE = 4.5;
 const FADE = 0.25;
 // Slight speed-up on gestures gives the standing pose a "digging" energy
 // so the NPC reads as grooving while it talks.
@@ -115,14 +116,23 @@ export default function StarNpc({ playerPosRef }: Props) {
     return () => mixer.removeEventListener('finished', onFinished as never);
   }, [clips, mixer]);
 
-  // -- Trigger: detect player approach in slumped phase ------------------
-  useFrame(() => {
-    if (phaseRef.current !== 'slumped' || !clips) return;
-    const g = group.current;
-    if (!g) return;
-    const dx = playerPosRef.current.x - g.position.x;
-    const dz = playerPosRef.current.z - g.position.z;
-    if (Math.hypot(dx, dz) < TRIGGER_DISTANCE) {
+  // -- Trigger: player must "bow" (fire an emote) within range ----------
+  // Subscribing to useEmote rather than checking proximity each frame
+  // means the NPC stays slumped if you just walk by — you have to
+  // intentionally greet them with the emote button / E / Space.
+  useEffect(() => {
+    let lastReq = useEmote.getState().requestId;
+    const unsub = useEmote.subscribe((s) => {
+      if (s.requestId === lastReq) return;
+      lastReq = s.requestId;
+      if (phaseRef.current !== 'slumped' || !clips) return;
+
+      const g = group.current;
+      if (!g) return;
+      const dx = playerPosRef.current.x - g.position.x;
+      const dz = playerPosRef.current.z - g.position.z;
+      if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
+
       // Wake up: cross-fade slumped → rise, start the story.
       clips.slumped?.fadeOut(FADE);
       if (clips.rise) clips.rise.reset().fadeIn(FADE).play();
@@ -130,10 +140,10 @@ export default function StarNpc({ playerPosRef }: Props) {
       useDialogue.getState().start(STORY);
 
       // Smoothly turn to face the player as we stand.
-      const targetYaw = Math.atan2(dx, dz) - Math.PI / 2; // -π/2 = +X-forward GLB
-      facingTargetYaw.current = targetYaw;
-    }
-  });
+      facingTargetYaw.current = Math.atan2(dx, dz) - Math.PI / 2;
+    });
+    return unsub;
+  }, [clips, playerPosRef]);
 
   // -- Face the player while rising / standing ---------------------------
   const facingTargetYaw = useRef<number | null>(null);

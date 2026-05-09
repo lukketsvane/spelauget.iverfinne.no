@@ -36,7 +36,6 @@ export default function Dialogue() {
 
   const line = lines[index];
   const isComplete = shown.length >= fullRef.current.length;
-  const isLast = index >= lines.length - 1;
 
   const handleAdvance = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -63,12 +62,8 @@ export default function Dialogue() {
           <div className="min-h-[3.5rem] text-base leading-relaxed text-violet-50">
             {shown}
             {!isComplete && <span className="ml-1 inline-block animate-pulse text-pink-300">▋</span>}
-          </div>
-          <div className="mt-3 flex items-center justify-end text-[0.7rem] uppercase tracking-widest text-violet-200/60">
-            {isComplete ? (
-              <span className="animate-pulse">{isLast ? 'Lukk' : 'Videre ▸'}</span>
-            ) : (
-              <span>Trykk for å hoppe over</span>
+            {isComplete && (
+              <span className="ml-2 inline-block animate-pulse text-pink-300/80">▾</span>
             )}
           </div>
         </div>
