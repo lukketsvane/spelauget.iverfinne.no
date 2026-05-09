@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import * as THREE from 'three';
 import Scene from './Scene';
 import HUD from '@/hud/HUD';
-import TouchJoystick from '@/hud/TouchJoystick';
+import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 
 export default function Game() {
@@ -31,7 +31,7 @@ export default function Game() {
       </Canvas>
       <KeyboardInput />
       <HUD />
-      <TouchJoystick />
+      <PointerInput />
     </>
   );
 }

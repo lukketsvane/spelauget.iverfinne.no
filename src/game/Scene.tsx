@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,8 +8,8 @@ import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
 import { CAMERA } from './config';
+import { useInput } from '@/store/input';
 
-// Direction the key light points (toward the ground from above-right).
 const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 
 export default function Scene() {
@@ -17,10 +17,35 @@ export default function Scene() {
   const lightRef = useRef<THREE.DirectionalLight>(null);
   const lightTargetRef = useRef<THREE.Object3D>(new THREE.Object3D());
   const target = useRef(new THREE.Vector3());
-  const { size } = useThree();
-
-  // Anchor that the character writes its position into each frame.
   const characterPos = useRef(new THREE.Vector3());
+
+  const { size, gl } = useThree();
+
+  // Push the camera + canvas element into the input store so the HTML
+  // pointer overlay can raycast tap positions to the ground plane.
+  const setCamera = useInput((s) => s.setCamera);
+  const setCanvasEl = useInput((s) => s.setCanvasEl);
+  useEffect(() => {
+    setCanvasEl(gl.domElement);
+    return () => setCanvasEl(null);
+  }, [gl.domElement, setCanvasEl]);
+
+  // Imperatively rebuild the orthographic frustum on every resize and
+  // expose the camera. Without this update the projection stays locked
+  // to the initial aspect ratio and the scene squeezes when the window
+  // changes shape.
+  useEffect(() => {
+    const cam = camRef.current;
+    if (!cam) return;
+    const aspect = size.width / Math.max(1, size.height);
+    const v = CAMERA.viewSize;
+    cam.left = (-v * aspect) / 2;
+    cam.right = (v * aspect) / 2;
+    cam.top = v / 2;
+    cam.bottom = -v / 2;
+    cam.updateProjectionMatrix();
+    setCamera(cam);
+  }, [size.width, size.height, setCamera]);
 
   useFrame(() => {
     target.current.lerp(characterPos.current, CAMERA.followLerp);
@@ -35,8 +60,6 @@ export default function Scene() {
       cam.lookAt(target.current);
     }
 
-    // Make the shadow-casting light follow the player. Shadow map covers a
-    // small area at high res, so it must travel with the action.
     const light = lightRef.current;
     if (light) {
       light.position.set(
@@ -49,25 +72,17 @@ export default function Scene() {
     }
   });
 
-  const aspect = size.width / size.height;
-  const viewSize = CAMERA.viewSize;
-
   return (
     <>
       <OrthographicCamera
         ref={camRef}
         makeDefault
-        left={(-viewSize * aspect) / 2}
-        right={(viewSize * aspect) / 2}
-        top={viewSize / 2}
-        bottom={-viewSize / 2}
+        manual
         near={-100}
         far={200}
         position={[CAMERA.offset.x, CAMERA.offset.y, CAMERA.offset.z]}
       />
 
-      {/* Bright ambient gives the "paper white" look; one directional key
-          provides the single hard cast shadow seen in the reference art. */}
       <ambientLight intensity={1.1} />
       <hemisphereLight args={['#ffffff', '#e6e6e6', 0.4]} />
       <directionalLight
@@ -89,7 +104,7 @@ export default function Scene() {
       <primitive object={lightTargetRef.current} />
 
       <Ground />
-      <Plants />
+      <Plants playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
     </>
   );

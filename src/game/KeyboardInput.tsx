@@ -34,12 +34,14 @@ export default function KeyboardInput() {
         x /= m;
         y /= m;
       }
-      // Keyboard is binary → emit full magnitude so the run anim kicks in.
-      useInput.getState().set(x, y);
+      useInput.getState().setMove(x, y);
     };
 
     const onDown = (e: KeyboardEvent) => {
       if (KEY_TO_AXIS[e.code]) {
+        // Any key press cancels an active path destination so the player
+        // isn't dragged to the old tap target after manual input.
+        useInput.getState().clearDestination();
         held.add(e.code);
         apply();
       }

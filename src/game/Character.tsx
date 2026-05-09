@@ -96,28 +96,48 @@ export default function Character({ positionRef }: Props) {
     const g = group.current;
     if (!g) return;
 
-    const { moveX, moveY } = useInput.getState();
+    const state = useInput.getState();
 
-    // Screen-space input → world-space (45° iso rotation baked in: camera
-    // sits on the +X +Z diagonal looking back to origin, so screen-up maps
-    // to world (-X, -Z)).
-    const c = Math.SQRT1_2;
-    const wx = moveX * c - moveY * c;
-    const wz = -moveX * c - moveY * c;
-    moveVec.current.set(wx, 0, wz);
+    // Direct stick/keyboard input takes priority. If neither is active and
+    // a tap-destination is set, walk toward it. Mag drives anim choice.
+    let dirX = 0;
+    let dirZ = 0;
+    let mag = 0;
 
-    const mag = moveVec.current.length();
+    const stickMag = Math.hypot(state.moveX, state.moveY);
+    if (stickMag > 0.05) {
+      // Screen-space → world (45° iso rotation: camera on +X+Z diagonal).
+      const c = Math.SQRT1_2;
+      dirX = state.moveX * c - state.moveY * c;
+      dirZ = -state.moveX * c - state.moveY * c;
+      const dm = Math.hypot(dirX, dirZ);
+      if (dm > 0) {
+        dirX /= dm;
+        dirZ /= dm;
+      }
+      mag = Math.min(1, stickMag);
+    } else if (state.destination) {
+      const dx = state.destination.x - g.position.x;
+      const dz = state.destination.z - g.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.4) {
+        state.clearDestination();
+      } else {
+        dirX = dx / dist;
+        dirZ = dz / dist;
+        // Ramp down within the last 2 m for a soft stop.
+        mag = Math.min(1, dist / 2);
+      }
+    }
+
     const moving = mag > 0.05;
 
     if (moving) {
-      const dirMag = Math.min(1, mag);
-      moveVec.current.normalize().multiplyScalar(dirMag);
-      const speed = THREE.MathUtils.lerp(CHARACTER.walkSpeed, CHARACTER.runSpeed, dirMag);
-      g.position.addScaledVector(moveVec.current, speed * dt);
+      const speed = THREE.MathUtils.lerp(CHARACTER.walkSpeed, CHARACTER.runSpeed, mag);
+      moveVec.current.set(dirX, 0, dirZ);
+      g.position.addScaledVector(moveVec.current, speed * dt * mag);
 
-      // Yaw to face move direction. modelForwardYaw compensates for the
-      // GLB's local forward axis (see config.ts).
-      const yaw = Math.atan2(moveVec.current.x, moveVec.current.z) + CHARACTER.modelForwardYaw;
+      const yaw = Math.atan2(dirX, dirZ) + CHARACTER.modelForwardYaw;
       targetQuat.current.setFromAxisAngle(upY.current, yaw);
       g.quaternion.rotateTowards(targetQuat.current, CHARACTER.turnSpeed * dt);
     }
