@@ -5,7 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import { CHARACTER, EMOTE_IDLE_RANGE, PLAYER_MODEL_URL } from './config';
-import { useInput } from '@/store/input';
+import { playerWorldPos, useInput } from '@/store/input';
 import { useEmote } from '@/store/emote';
 import { useLevel } from '@/store/level';
 
@@ -262,6 +262,7 @@ export default function Character({ positionRef }: Props) {
     }
 
     positionRef.current.copy(g.position);
+    playerWorldPos.copy(g.position);
   });
 
   return (

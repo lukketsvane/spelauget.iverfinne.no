@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import type * as THREE from 'three';
+import * as THREE from 'three';
+
+// Mutable singleton — Character writes its world position here every
+// frame; PointerInput reads it to compute "direction from character to
+// cursor" without going through reactive zustand state.
+export const playerWorldPos = new THREE.Vector3();
 
 type InputState = {
   // Analog stick: x in [-1, 1] right+, y in [-1, 1] up+ (screen-space).
