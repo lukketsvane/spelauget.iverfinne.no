@@ -12,6 +12,7 @@ import { useMenu } from '@/store/menu';
 // pixel-art frame intact.
 export default function MainMenu() {
   const startGame = useMenu((s) => s.startGame);
+  const startNewGame = useMenu((s) => s.startNewGame);
   const openSettings = useMenu((s) => s.openSettings);
   const closeSettings = useMenu((s) => s.closeSettings);
   const showSettings = useMenu((s) => s.showSettings);
@@ -25,7 +26,8 @@ export default function MainMenu() {
   const handleNewGame = () => {
     useLevel.getState().reset();
     useGame.getState().reset();
-    startGame();
+    // startNewGame triggers the slow fade-from-black overlay.
+    startNewGame();
   };
 
   const handleErase = () => {
@@ -53,10 +55,12 @@ export default function MainMenu() {
       <div className="mb-12 flex flex-col items-center gap-3">
         {!showSettings ? (
           <>
-            <ImageButton src="/menu/bt_new_game.png" alt="New Game" onClick={handleNewGame} />
+            {/* Continue is shown first when a save exists so returning
+                players don't have to scan past New Game. */}
             {hasSave && (
               <ImageButton src="/menu/bt_continue.png" alt="Continue" onClick={startGame} />
             )}
+            <ImageButton src="/menu/bt_new_game.png" alt="New Game" onClick={handleNewGame} />
             <ImageButton src="/menu/bt_settings.png" alt="Settings" onClick={openSettings} />
           </>
         ) : (

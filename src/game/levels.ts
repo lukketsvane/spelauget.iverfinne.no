@@ -236,10 +236,21 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'l2.boble.bobble',
         position: [8, -8],
         dialogue: [
-          { text: 'Hi. My name is Bobble.' },
-          { text: 'Welcome to the Star Meadow.' },
-          { text: 'Here the light turns blue at night.' },
-          { text: 'One day, you might find your way home.' },
+          { text: "Oh — a fresh face. The lights felt it before I did." },
+          { text: "I'm Bobble. I don't have legs. Just opinions, and wind." },
+          { action: true, text: 'tilts, drifts a hand-width sideways, drifts back' },
+          {
+            text: "So the digger gave you the key. They give it to most. I never asked why.",
+          },
+          {
+            text: 'Far east of here, three little lights blink in sequence. I think they are counting something.',
+          },
+          {
+            text: "If you hear humming under the rocks, don't hum back. It learns the tune.",
+          },
+          {
+            text: "Go find what's waiting at the edge. I'd come along, but I'd just float off.",
+          },
         ],
       },
       // Three trilo decorations scattered around the meadow — picked

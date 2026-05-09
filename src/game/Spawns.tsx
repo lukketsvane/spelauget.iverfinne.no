@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, type MutableRefObject } from 'react';
 import * as THREE from 'three';
+import { useGame } from '@/store/game';
 import { useLevel } from '@/store/level';
 import { useInteraction } from '@/store/interaction';
 import { LEVELS } from './levels';
@@ -20,6 +21,9 @@ type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 // clones, mixer state, dialogue subscriptions, etc.
 export default function Spawns({ playerPosRef }: Props) {
   const currentLevelId = useLevel((s) => s.currentLevelId);
+  // Portals only manifest once the digger has handed over the key —
+  // before that they shouldn't even appear on the map.
+  const hasKey = useGame((s) => s.hasKey);
   const spawns = useMemo(() => LEVELS[currentLevelId].spawns, [currentLevelId]);
 
   useEffect(() => {
@@ -53,6 +57,7 @@ export default function Spawns({ playerPosRef }: Props) {
               />
             );
           case 'portal':
+            if (!hasKey) return null;
             return (
               <Portal
                 key={s.id}
@@ -68,6 +73,7 @@ export default function Spawns({ playerPosRef }: Props) {
             return (
               <StoneHut
                 key={s.id}
+                id={s.id}
                 position={[s.position[0], 0, s.position[1]]}
                 scale={s.scale}
                 rotationY={s.rotation}
@@ -77,6 +83,7 @@ export default function Spawns({ playerPosRef }: Props) {
             return (
               <RockStack
                 key={s.id}
+                id={s.id}
                 position={[s.position[0], 0, s.position[1]]}
                 scale={s.scale}
                 rotationY={s.rotation}
@@ -86,6 +93,7 @@ export default function Spawns({ playerPosRef }: Props) {
             return (
               <Trilo
                 key={s.id}
+                id={s.id}
                 position={[s.position[0], 0, s.position[1]]}
                 scale={s.scale}
                 rotationY={s.rotation}

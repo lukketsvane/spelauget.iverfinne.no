@@ -25,3 +25,18 @@ canvas {
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
+
+/* Slow opening fade for New Game. Defined here (not in tailwind config)
+   because dev-mode JIT sometimes misses keyframe additions until a
+   full server restart, and we want this animation to be reliable. */
+@keyframes fade-from-black {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.animate-fade-from-black {
+  animation: fade-from-black 2800ms ease-out forwards;
+}

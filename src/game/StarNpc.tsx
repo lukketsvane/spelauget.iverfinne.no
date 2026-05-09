@@ -11,6 +11,9 @@ import { useInteraction } from '@/store/interaction';
 
 const URL = '/models/stjernekarakter.glb';
 const TRIGGER_DISTANCE = 4.5;
+// If the player walks past this distance during dialogue, the
+// conversation is auto-cancelled — the NPC won't shout from afar.
+const CANCEL_DISTANCE = 9.0;
 const SCALE = 4.5;
 const FADE = 0.25;
 
@@ -112,6 +115,15 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
 
     if (dist < TRIGGER_DISTANCE) useInteraction.getState().claim(id);
     else useInteraction.getState().release(id);
+
+    // Cancel our active dialogue if the player wanders out of range.
+    if (
+      ourDialogue.current &&
+      useDialogue.getState().active &&
+      dist > CANCEL_DISTANCE
+    ) {
+      useDialogue.getState().close();
+    }
 
     if (digClipName) {
       const action = actions[digClipName];

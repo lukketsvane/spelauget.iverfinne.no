@@ -1,12 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { collision } from '@/store/collision';
 
 const URL = '/models/trilo.glb';
+const COLLISION_RADIUS = 1.6;
 
 type Props = {
+  id: string;
   position: [number, number, number];
   scale?: number;
   rotationY?: number;
@@ -20,6 +23,7 @@ type Props = {
 // clone the scene per-instance so each placement gets its own tinted
 // Lambert material, then dispatch normal castShadow + receiveShadow.
 export default function Trilo({
+  id,
   position,
   scale = 1.5,
   rotationY = 0,
@@ -45,6 +49,11 @@ export default function Trilo({
     });
     return c;
   }, [scene, color, emissive]);
+
+  useEffect(() => {
+    collision.register(id, position[0], position[2], COLLISION_RADIUS * scale);
+    return () => collision.unregister(id);
+  }, [id, position, scale]);
 
   return (
     <group position={position} rotation={[0, rotationY, 0]} scale={scale}>

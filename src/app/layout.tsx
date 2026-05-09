@@ -11,8 +11,12 @@ export const metadata: Metadata = {
     title: 'Spelauget',
   },
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/icon.svg' }],
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    // iOS home-screen icon. PNG required — Safari ignores SVG here.
+    apple: [{ url: '/icon.png', type: 'image/png' }],
   },
 };
 

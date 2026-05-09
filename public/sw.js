@@ -1,12 +1,17 @@
 // Stale-while-revalidate service worker. The shell + heavy assets are
 // pre-cached on install so the game can launch fully offline once visited
 // at least once. Bump CACHE_VERSION when the asset list changes.
-const CACHE_VERSION = 'spelauget-v8';
+const CACHE_VERSION = 'spelauget-v11';
 
 const PRECACHE = [
   '/',
   '/manifest.json',
+  '/icon.png',
   '/icon.svg',
+  '/sounds/ost_01.mp3',
+  '/sounds/ost_02.mp3',
+  '/sounds/ost_03.mp3',
+  '/sounds/ost_04.mp3',
   '/menu/menu_screen.png',
   '/menu/bt_new_game.png',
   '/menu/bt_continue.png',
@@ -62,9 +67,11 @@ self.addEventListener('fetch', (event) => {
   const isStatic =
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/models/') ||
+    url.pathname.startsWith('/sounds/') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.glb') ||
+    url.pathname.endsWith('.mp3') ||
     url.pathname === '/manifest.json';
 
   if (isStatic) {

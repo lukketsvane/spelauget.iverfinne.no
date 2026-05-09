@@ -10,8 +10,10 @@ import Dialogue from '@/hud/Dialogue';
 import LevelLabel from '@/hud/LevelLabel';
 import MainMenu from '@/hud/MainMenu';
 import PauseMenuButton from '@/hud/PauseMenuButton';
+import BlackOverlay from '@/hud/BlackOverlay';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
+import BackgroundMusic from './BackgroundMusic';
 import ServiceWorker from './ServiceWorker';
 import { useMenu } from '@/store/menu';
 
@@ -58,6 +60,8 @@ export default function Game() {
 
       {!inGame && <MainMenu />}
 
+      <BlackOverlay />
+      <BackgroundMusic />
       <ServiceWorker />
     </>
   );

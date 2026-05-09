@@ -8,6 +8,11 @@ import { CHARACTER, EMOTE_IDLE_RANGE, PLAYER_MODEL_URL } from './config';
 import { playerWorldPos, useInput } from '@/store/input';
 import { useEmote } from '@/store/emote';
 import { useLevel } from '@/store/level';
+import { collision } from '@/store/collision';
+
+// Player collision footprint (metres). Big enough that the character
+// stops short of huts, doesn't squeeze between trilos.
+const PLAYER_RADIUS = 0.6;
 
 type Props = { positionRef: MutableRefObject<THREE.Vector3> };
 type Role = 'idle' | 'walk' | 'run';
@@ -237,6 +242,10 @@ export default function Character({ positionRef }: Props) {
       targetQuat.current.setFromAxisAngle(upY.current, yaw);
       g.quaternion.rotateTowards(targetQuat.current, CHARACTER.turnSpeed * dt);
     }
+
+    // Resolve any collision with registered props (huts, rocks, trilos).
+    // Mutates g.position in place if the player is overlapping anything.
+    collision.resolve(g.position, PLAYER_RADIUS);
 
     const desired: Role = !moving ? 'idle' : mag > 0.85 ? 'run' : 'walk';
     if (desired !== currentRole.current && !isPlayingExtra.current) {
