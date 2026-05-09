@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { applyGradientMap, makeGradientTexture, PLANT_GRADIENT } from './gradients';
 
 const PLANT_SOURCES = [
   { url: '/plante_01.png', height: 2.4 },
@@ -13,19 +14,15 @@ const PLANT_SOURCES = [
   { url: '/plante._01.png', height: 2.2 },
 ] as const;
 
-// Camera doesn't yaw, so a fixed 45° rotation looks like a billboard at the
-// iso angle and produces a consistent drop-shadow.
 const FACE_CAMERA_Y = Math.PI / 4;
-
-const CHUNK_SIZE = 12; // world-units per chunk side
-const CHUNK_RADIUS = 3; // (2*r+1)² chunks loaded around the player
+const CHUNK_SIZE = 12;
+const CHUNK_RADIUS = 3;
 const PLANTS_PER_CHUNK_MIN = 5;
 const PLANTS_PER_CHUNK_MAX = 9;
-const PLAYER_SPAWN_SAFE_RADIUS = 3.0; // metres — keep starting tile clear
+const PLAYER_SPAWN_SAFE_RADIUS = 3.0;
 
 type Placement = { idx: number; x: number; z: number; scale: number; flip: boolean };
 type Chunk = { key: string; cx: number; cz: number; placements: Placement[] };
-
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
 export default function Plants({ playerPosRef }: Props) {
@@ -41,7 +38,6 @@ export default function Plants({ playerPosRef }: Props) {
     }
   }, [textures]);
 
-  // Pre-computed plane sizes per source — read once, reused everywhere.
   const dims = useMemo(
     () =>
       PLANT_SOURCES.map((src, i) => {
@@ -52,6 +48,24 @@ export default function Plants({ playerPosRef }: Props) {
     [textures],
   );
 
+  // One material per source texture, gradient-remapped. Sharing the
+  // material across all instances of the same plant is cheap and avoids
+  // recompiling the gradient shader hundreds of times.
+  const gradientTex = useMemo(() => makeGradientTexture(PLANT_GRADIENT), []);
+  const materials = useMemo(() => {
+    return PLANT_SOURCES.map((_, i) => {
+      const m = new THREE.MeshBasicMaterial({
+        map: textures[i],
+        transparent: true,
+        alphaTest: 0.5,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      });
+      applyGradientMap(m, gradientTex);
+      return m;
+    });
+  }, [textures, gradientTex]);
+
   const lastChunk = useRef<{ cx: number; cz: number } | null>(null);
   const [chunks, setChunks] = useState<Map<string, Chunk>>(() => new Map());
 
@@ -61,11 +75,7 @@ export default function Plants({ playerPosRef }: Props) {
     const ccx = Math.floor(px / CHUNK_SIZE);
     const ccz = Math.floor(pz / CHUNK_SIZE);
 
-    // Only re-evaluate the chunk set when the player crosses a boundary.
-    // setState every frame would force a tree diff for hundreds of meshes.
-    if (lastChunk.current && lastChunk.current.cx === ccx && lastChunk.current.cz === ccz) {
-      return;
-    }
+    if (lastChunk.current && lastChunk.current.cx === ccx && lastChunk.current.cz === ccz) return;
     lastChunk.current = { cx: ccx, cz: ccz };
 
     const desired = new Set<string>();
@@ -99,7 +109,6 @@ export default function Plants({ playerPosRef }: Props) {
     <group>
       {Array.from(chunks.values()).flatMap((chunk) =>
         chunk.placements.map((p, i) => {
-          const tex = textures[p.idx];
           const { w, h } = dims[p.idx];
           const sw = w * p.scale;
           const sh = h * p.scale;
@@ -112,13 +121,7 @@ export default function Plants({ playerPosRef }: Props) {
               castShadow
             >
               <planeGeometry args={[sw, sh]} />
-              <meshBasicMaterial
-                map={tex}
-                transparent
-                alphaTest={0.5}
-                side={THREE.DoubleSide}
-                toneMapped={false}
-              />
+              <primitive object={materials[p.idx]} attach="material" />
             </mesh>
           );
         }),
@@ -138,7 +141,6 @@ function buildChunk(cx: number, cz: number): Placement[] {
     const lz = (rng() - 0.5) * CHUNK_SIZE;
     const wx = cx * CHUNK_SIZE + lx + CHUNK_SIZE / 2;
     const wz = cz * CHUNK_SIZE + lz + CHUNK_SIZE / 2;
-    // Don't spawn on top of the spawn point so the player can see clearly.
     if (Math.hypot(wx, wz) < PLAYER_SPAWN_SAFE_RADIUS) continue;
     items.push({
       idx: Math.floor(rng() * PLANT_SOURCES.length),
@@ -151,7 +153,6 @@ function buildChunk(cx: number, cz: number): Placement[] {
   return items;
 }
 
-// Stable hash so chunk content is the same every visit.
 function hash2(a: number, b: number): number {
   let h = (a | 0) * 0x27d4eb2d ^ ((b | 0) * 0x165667b1 + 0x9e3779b9);
   h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
