@@ -8,6 +8,7 @@ import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
 import Particles from './Particles';
+import Portal from './Portal';
 import StarNpc from './StarNpc';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
@@ -143,6 +144,7 @@ export default function Scene() {
       <Ground />
       <Plants playerPosRef={characterPos} />
       <Particles playerPosRef={characterPos} />
+      <Portal position={[-8, 2.4, -8]} radius={2.2} />
       <StarNpc playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
     </>
