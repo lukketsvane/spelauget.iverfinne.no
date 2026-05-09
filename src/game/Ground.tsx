@@ -51,8 +51,8 @@ export default function Ground() {
     // its replacement of <map_fragment> reads from our `sampleStochastic`
     // helper instead of the raw `map` uniform.
     const prev = m.onBeforeCompile;
-    m.onBeforeCompile = (shader) => {
-      prev?.(shader);
+    m.onBeforeCompile = (shader, renderer) => {
+      prev?.call(m, shader, renderer);
       shader.uniforms.tileTex0 = { value: textures[0] };
       shader.uniforms.tileTex1 = { value: textures[1] };
       shader.uniforms.tileTex2 = { value: textures[2] };

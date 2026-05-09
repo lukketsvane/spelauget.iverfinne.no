@@ -25,9 +25,10 @@ const STORY: DialogueLine[] = [
   { text: 'IDA ER EN JÆVLA HORE' },
 ];
 
-// 'standing' = the lively gesture cycle while telling the story.
-// 'idle' = post-conversation calm idle, slowly tracking the player.
-type Phase = 'slumped' | 'rising' | 'standing' | 'idle';
+// 'standing' = the lively gesture cycle, started by the bow and looping
+// forever afterwards. The NPC dances continuously while tracking the
+// player's position.
+type Phase = 'slumped' | 'rising' | 'standing';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -165,38 +166,15 @@ export default function StarNpc({ playerPosRef }: Props) {
     return unsub;
   }, [clips, playerPosRef]);
 
-  // -- Dialogue end → calm idle facing the player -----------------------
-  useEffect(() => {
-    let wasActive = useDialogue.getState().active;
-    const unsub = useDialogue.subscribe((s) => {
-      if (s.active === wasActive) return;
-      wasActive = s.active;
-      if (s.active) return;
-      if (phaseRef.current !== 'standing') return;
-      if (!clips) return;
-      // Stop the dance, fade into a peaceful idle loop.
-      clips.gestureA?.fadeOut(FADE * 2);
-      clips.gestureB?.fadeOut(FADE * 2);
-      const idle = clips.idle;
-      if (idle) {
-        idle.setLoop(THREE.LoopRepeat, Infinity);
-        idle.timeScale = 1.0;
-        idle.reset().fadeIn(FADE * 2).play();
-      }
-      setPhase('idle');
-    });
-    return unsub;
-  }, [clips]);
-
   // -- Face the player + interaction proximity + safety net --------------
   const facingTargetYaw = useRef<number | null>(null);
   useFrame((_, dt) => {
     const g = group.current;
     if (!g) return;
 
-    // Continuous facing tracking after the conversation: NPC slowly
-    // looks at the player wherever they go.
-    if (phaseRef.current === 'idle') {
+    // Continuous tracking once the NPC is up. They keep dancing forever
+    // and slowly turn to follow the player wherever they wander.
+    if (phaseRef.current === 'standing') {
       const dx = playerPosRef.current.x - g.position.x;
       const dz = playerPosRef.current.z - g.position.z;
       facingTargetYaw.current = Math.atan2(dx, dz) - Math.PI / 2;
@@ -231,9 +209,7 @@ export default function StarNpc({ playerPosRef }: Props) {
           ? clips.slumped
           : phase === 'standing'
             ? clips.gestureA ?? clips.gestureB ?? clips.idle
-            : phase === 'idle'
-              ? clips.idle
-              : null; // 'rising' is one-shot, leave alone
+            : null; // 'rising' is one-shot, leave alone
       if (desired && desired.getEffectiveWeight() < 0.01) {
         if (phase === 'standing') {
           desired.setLoop(THREE.LoopOnce, 1);
