@@ -3,10 +3,11 @@
 import { useEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { applyGradientMap, GROUND_GRADIENT, makeGradientTexture } from './gradients';
 
 const GROUND_TEXTURE = '/bakke_tile_01.png';
-const GROUND_SIZE = 400; // world units per side — large enough to never see edges
-const TILE_SIZE = 6; // world units one texture tile spans
+const GROUND_SIZE = 400;
+const TILE_SIZE = 6;
 
 export default function Ground() {
   const tex = useTexture(GROUND_TEXTURE);
@@ -23,20 +24,15 @@ export default function Ground() {
     tex.needsUpdate = true;
   }, [tex]);
 
-  // Lambert is cheap and shaded by the directional light so cast shadows
-  // visibly darken the texture; emissive lifts the base brightness so the
-  // overall scene stays paper-bright instead of gray.
-  const material = useMemo(
-    () =>
-      new THREE.MeshLambertMaterial({
-        map: tex,
-        color: '#ffffff',
-        emissive: new THREE.Color('#cccccc'),
-        emissiveIntensity: 1.0,
-        emissiveMap: tex,
-      }),
-    [tex],
-  );
+  // Lambert is shaded by the directional light, so cast shadows visibly
+  // darken the surface; gradient remap then tones the whole thing into
+  // deep night-purple regardless of the source PNG's grey midtones.
+  const gradientTex = useMemo(() => makeGradientTexture(GROUND_GRADIENT), []);
+  const material = useMemo(() => {
+    const m = new THREE.MeshLambertMaterial({ map: tex, color: '#ffffff' });
+    applyGradientMap(m, gradientTex);
+    return m;
+  }, [tex, gradientTex]);
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
