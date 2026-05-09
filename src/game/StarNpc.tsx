@@ -68,11 +68,13 @@ export default function StarNpc({ playerPosRef }: Props) {
     }
     if (clips.gestureA) {
       clips.gestureA.setLoop(THREE.LoopOnce, 1);
-      clips.gestureA.clampWhenFinished = false;
+      // clamp=true holds the last frame at full weight so the cross-fade
+      // into the next gesture never bottoms out into bind pose (T-pose).
+      clips.gestureA.clampWhenFinished = true;
     }
     if (clips.gestureB) {
       clips.gestureB.setLoop(THREE.LoopOnce, 1);
-      clips.gestureB.clampWhenFinished = false;
+      clips.gestureB.clampWhenFinished = true;
     }
     if (clips.idle) {
       clips.idle.setLoop(THREE.LoopRepeat, Infinity);
@@ -95,17 +97,21 @@ export default function StarNpc({ playerPosRef }: Props) {
         e.action.fadeOut(FADE * 1.5);
         setPhase('standing');
       } else if (e.action === clips.gestureA) {
-        // A → B
-        const b = clips.gestureB ?? clips.idle;
+        // A → B (or back to A as a fallback so the cycle can never stall)
+        const b = clips.gestureB ?? clips.gestureA ?? clips.idle;
         if (b) {
+          b.setLoop(THREE.LoopOnce, 1);
+          b.clampWhenFinished = true;
           b.timeScale = GESTURE_TIMESCALE;
           b.reset().fadeIn(FADE).play();
         }
         e.action.fadeOut(FADE);
       } else if (e.action === clips.gestureB) {
         // B → A
-        const a = clips.gestureA ?? clips.idle;
+        const a = clips.gestureA ?? clips.gestureB ?? clips.idle;
         if (a) {
+          a.setLoop(THREE.LoopOnce, 1);
+          a.clampWhenFinished = true;
           a.timeScale = GESTURE_TIMESCALE;
           a.reset().fadeIn(FADE).play();
         }
@@ -149,12 +155,32 @@ export default function StarNpc({ playerPosRef }: Props) {
   const facingTargetYaw = useRef<number | null>(null);
   useFrame((_, dt) => {
     const g = group.current;
-    if (!g || facingTargetYaw.current === null) return;
-    const target = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      facingTargetYaw.current,
-    );
-    g.quaternion.rotateTowards(target, dt * 4);
+    if (g && facingTargetYaw.current !== null) {
+      const target = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        facingTargetYaw.current,
+      );
+      g.quaternion.rotateTowards(target, dt * 4);
+    }
+
+    // Safety net: if we're standing but somehow no gesture has any weight
+    // (T-pose), restart the dance. This catches edge cases where a
+    // finished event was missed (e.g. paused tab, animation reset).
+    if (phaseRef.current === 'standing' && clips) {
+      const a = clips.gestureA;
+      const b = clips.gestureB;
+      const aWeight = a?.getEffectiveWeight() ?? 0;
+      const bWeight = b?.getEffectiveWeight() ?? 0;
+      if (aWeight < 0.01 && bWeight < 0.01) {
+        const fallback = a ?? b ?? clips.idle;
+        if (fallback) {
+          fallback.setLoop(THREE.LoopOnce, 1);
+          fallback.clampWhenFinished = true;
+          fallback.timeScale = GESTURE_TIMESCALE;
+          fallback.reset().fadeIn(FADE).play();
+        }
+      }
+    }
   });
 
   // -- Foot lift so feet rest on y=0 in the slumped pose -----------------
