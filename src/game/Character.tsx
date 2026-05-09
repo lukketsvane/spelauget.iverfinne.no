@@ -29,6 +29,15 @@ export default function Character({ positionRef }: Props) {
         mesh.frustumCulled = false; // skinned meshes can self-cull at edges
       }
     });
+
+    // Scale up and lift so the model's feet rest on y=0. The GLB's origin is
+    // near the character's centre, so without this the lower half clips
+    // through the ground. Box3 needs world matrices to be current.
+    scene.position.set(0, 0, 0);
+    scene.scale.setScalar(CHARACTER.scale);
+    scene.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(scene);
+    scene.position.y = -box.min.y;
   }, [scene]);
 
   const { actions, names } = useAnimations(animations, group);

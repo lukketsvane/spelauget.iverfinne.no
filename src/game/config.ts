@@ -18,6 +18,8 @@ export const CHARACTER = {
   turnSpeed: 12,
   // Animation crossfade time.
   fadeSeconds: 0.18,
+  // Visual scale applied to the GLB.
+  scale: 2.0,
 } as const;
 
 // Animation roles are picked at runtime by clip duration in Character.tsx
