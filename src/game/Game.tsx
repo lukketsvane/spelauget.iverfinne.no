@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import Scene from './Scene';
 import HUD from '@/hud/HUD';
 import EmoteButton from '@/hud/EmoteButton';
+import Dialogue from '@/hud/Dialogue';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 
@@ -38,6 +39,7 @@ export default function Game() {
       <HUD />
       <PointerInput />
       <EmoteButton />
+      <Dialogue />
     </>
   );
 }

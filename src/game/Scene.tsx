@@ -8,6 +8,7 @@ import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
 import Particles from './Particles';
+import StarNpc from './StarNpc';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 
@@ -112,6 +113,7 @@ export default function Scene() {
       <Ground />
       <Plants playerPosRef={characterPos} />
       <Particles playerPosRef={characterPos} />
+      <StarNpc playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
     </>
   );
