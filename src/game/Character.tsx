@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { CHARACTER, EMOTE_IDLE_RANGE, PLAYER_MODEL_URL } from './config';
 import { useInput } from '@/store/input';
 import { useEmote } from '@/store/emote';
+import { useLevel } from '@/store/level';
 
 type Props = { positionRef: MutableRefObject<THREE.Vector3> };
 type Role = 'idle' | 'walk' | 'run';
@@ -152,6 +153,20 @@ export default function Character({ positionRef }: Props) {
       if (s.requestId !== prev.requestId) playEmote();
     });
   }, [playEmote]);
+
+  // Teleport on level change: reset to the new level's spawn point and
+  // halt any input so we don't drift away from the spawn marker.
+  useEffect(() => {
+    return useLevel.subscribe((s, prev) => {
+      if (s.changeCounter === prev.changeCounter) return;
+      const g = group.current;
+      if (!g) return;
+      g.position.set(s.playerSpawn.x, 0, s.playerSpawn.z);
+      g.quaternion.identity();
+      useInput.getState().setMove(0, 0);
+      useInput.getState().clearDestination();
+    });
+  }, []);
 
   // Keyboard shortcut: E or Space.
   useEffect(() => {

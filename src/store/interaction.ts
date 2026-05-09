@@ -1,18 +1,31 @@
 import { create } from 'zustand';
 
-// Set by NPCs / interactables in their useFrame loops based on player
-// proximity. The HUD button reads this to know whether to render. The
-// `prompt` slot is reserved for future per-interaction prompts ("Bukk
-// for å hilse", "Plukk opp", etc.) — kept on a single store so only one
-// can be active at a time.
+// Claim-based interaction slot. Each interactable (StarNpc, Portal, …)
+// claims the slot when the player enters its range and releases when
+// they leave. Multiple entities don't fight over the slot — claim() is
+// a no-op while another owner already holds it. This keeps the HUD
+// button stable when the player walks across overlapping triggers.
+
 type InteractionState = {
+  ownerId: string | null;
   available: boolean;
   prompt: string | null;
-  setAvailable: (available: boolean, prompt?: string | null) => void;
+  claim: (ownerId: string, prompt?: string | null) => void;
+  release: (ownerId: string) => void;
+  // Force-clear (used on level transitions).
+  reset: () => void;
 };
 
 export const useInteraction = create<InteractionState>((set) => ({
+  ownerId: null,
   available: false,
   prompt: null,
-  setAvailable: (available, prompt = null) => set({ available, prompt }),
+  claim: (ownerId, prompt = null) =>
+    set((s) => {
+      if (s.ownerId !== null && s.ownerId !== ownerId) return s;
+      return { ownerId, available: true, prompt };
+    }),
+  release: (ownerId) =>
+    set((s) => (s.ownerId === ownerId ? { ownerId: null, available: false, prompt: null } : s)),
+  reset: () => set({ ownerId: null, available: false, prompt: null }),
 }));

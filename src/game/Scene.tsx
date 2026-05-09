@@ -8,8 +8,7 @@ import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
 import Particles from './Particles';
-import Portal from './Portal';
-import StarNpc from './StarNpc';
+import Spawns from './Spawns';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
@@ -144,8 +143,7 @@ export default function Scene() {
       <Ground />
       <Plants playerPosRef={characterPos} />
       <Particles playerPosRef={characterPos} />
-      <Portal position={[-8, 2.4, -8]} radius={2.2} />
-      <StarNpc playerPosRef={characterPos} />
+      <Spawns playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
     </>
   );

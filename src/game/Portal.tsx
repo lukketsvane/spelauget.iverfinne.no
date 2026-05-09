@@ -1,27 +1,38 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useEmote } from '@/store/emote';
+import { useInteraction } from '@/store/interaction';
+import { useLevel } from '@/store/level';
+import type { LevelId } from './levels';
+
+const TRIGGER_DISTANCE = 3.6;
 
 type Props = {
-  position?: [number, number, number];
+  id: string;
+  position: [number, number, number];
   radius?: number;
-  // Two-tone palette for the shimmer; a → centre, b → outer flares.
   colorA?: string;
   colorB?: string;
+  targetLevel: LevelId;
+  playerPosRef: MutableRefObject<THREE.Vector3>;
 };
 
-// Vertical disc with an animated shimmer / glance shader. The fragment
-// blends a slow rotating swirl with fast radial rays and an outer edge
-// glow, all driven by uTime — gives the portal a living, pulsing aura.
+// Vertical disc with an animated shimmer / glance shader. Bow within
+// range to teleport to `targetLevel`.
 export default function Portal({
-  position = [10, 2.4, -10],
+  id,
+  position,
   radius = 2.2,
   colorA = '#ffd5e8',
   colorB = '#7a4cff',
+  targetLevel,
+  playerPosRef,
 }: Props) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
+  const groupRef = useRef<THREE.Group>(null);
 
   const material = useMemo(() => {
     return new THREE.ShaderMaterial({
@@ -48,7 +59,6 @@ export default function Portal({
         uniform vec3 uColorA;
         uniform vec3 uColorB;
 
-        // 2D simplex-ish hash for cheap noise.
         float hash(vec2 p) {
           return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
         }
@@ -65,36 +75,22 @@ export default function Portal({
 
         void main() {
           vec2 p = vUv - 0.5;
-          float r = length(p) * 2.0; // 0 at centre, 1 at edge
-
-          // Discard pixels outside the disc with a soft edge.
+          float r = length(p) * 2.0;
           if (r > 1.05) discard;
           float disc = smoothstep(1.0, 0.95, r);
 
           float angle = atan(p.y, p.x);
-
-          // Slow rotating swirl — primary motion.
           float swirl = sin(angle * 3.0 + uTime * 0.9 + r * 5.0) * 0.5 + 0.5;
-
-          // Faster radial rays sweeping around the centre.
           float rays = sin(angle * 7.0 - uTime * 1.6) * 0.5 + 0.5;
           rays *= sin(uTime * 2.4 + r * 9.0) * 0.5 + 0.5;
-
-          // Centre flicker — short bursts of brightness in the middle.
           float core = pow(1.0 - r, 2.5);
           core *= 0.6 + 0.4 * sin(uTime * 4.0);
-
-          // Drifting noise layer for sparkle.
           float n = noise(vec2(p.x * 5.0 + uTime * 0.4, p.y * 5.0 - uTime * 0.6));
 
-          // Compose colour: swirl picks between palette stops, rays
-          // brighten on top, core flares the centre.
           vec3 col = mix(uColorB, uColorA, swirl);
           col += uColorA * rays * 0.55;
           col += uColorA * core * 1.4;
           col += uColorA * n * 0.2;
-
-          // Outer rim emphasis so the boundary glows.
           float rim = smoothstep(0.85, 1.0, r) * 1.2;
           col += uColorA * rim * 0.7;
 
@@ -105,16 +101,46 @@ export default function Portal({
     });
   }, [colorA, colorB]);
 
+  // Shimmer animation + claim/release based on player proximity.
   useFrame((state) => {
-    if (matRef.current) {
-      matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
-    }
+    if (matRef.current) matRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+
+    const g = groupRef.current;
+    if (!g) return;
+    const dx = playerPosRef.current.x - g.position.x;
+    const dz = playerPosRef.current.z - g.position.z;
+    const inRange = Math.hypot(dx, dz) < TRIGGER_DISTANCE;
+    if (inRange) useInteraction.getState().claim(id);
+    else useInteraction.getState().release(id);
   });
 
+  // Subscribe to bow trigger; when player bows in range, change level.
+  useEffect(() => {
+    let lastReq = useEmote.getState().requestId;
+    const unsub = useEmote.subscribe((s) => {
+      if (s.requestId === lastReq) return;
+      lastReq = s.requestId;
+      const g = groupRef.current;
+      if (!g) return;
+      const dx = playerPosRef.current.x - g.position.x;
+      const dz = playerPosRef.current.z - g.position.z;
+      if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
+      useLevel.getState().setLevel(targetLevel);
+    });
+    return unsub;
+  }, [id, playerPosRef, targetLevel]);
+
+  // On unmount, drop our claim so a future portal can take over.
+  useEffect(() => {
+    return () => useInteraction.getState().release(id);
+  }, [id]);
+
   return (
-    <mesh position={position}>
-      <circleGeometry args={[radius, 64]} />
-      <primitive ref={matRef} object={material} attach="material" />
-    </mesh>
+    <group ref={groupRef} position={position}>
+      <mesh>
+        <circleGeometry args={[radius, 64]} />
+        <primitive ref={matRef} object={material} attach="material" />
+      </mesh>
+    </group>
   );
 }

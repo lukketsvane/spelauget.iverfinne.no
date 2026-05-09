@@ -9,8 +9,6 @@ import { useEmote } from '@/store/emote';
 import { useInteraction } from '@/store/interaction';
 
 const URL = '/models/stjernekarakter.glb';
-const SPAWN_X = 6;
-const SPAWN_Z = 6;
 const TRIGGER_DISTANCE = 4.5;
 const SCALE = 4.5;
 const FADE = 0.25;
@@ -30,9 +28,13 @@ const STORY: DialogueLine[] = [
 // player's position.
 type Phase = 'slumped' | 'rising' | 'standing';
 
-type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
+type Props = {
+  id: string;
+  position: [number, number, number];
+  playerPosRef: MutableRefObject<THREE.Vector3>;
+};
 
-export default function StarNpc({ playerPosRef }: Props) {
+export default function StarNpc({ id, position, playerPosRef }: Props) {
   const group = useRef<THREE.Group>(null);
   const innerGroup = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(URL);
@@ -194,10 +196,8 @@ export default function StarNpc({ playerPosRef }: Props) {
     const dz = playerPosRef.current.z - g.position.z;
     const inRange =
       phaseRef.current === 'slumped' && Math.hypot(dx, dz) < TRIGGER_DISTANCE;
-    const cur = useInteraction.getState();
-    if (cur.available !== inRange) {
-      useInteraction.getState().setAvailable(inRange, null);
-    }
+    if (inRange) useInteraction.getState().claim(id);
+    else useInteraction.getState().release(id);
 
     // Safety net: if no clip has any weight on the bones, the character
     // would render in bind pose (T-pose). Restart whatever pose belongs
@@ -224,11 +224,10 @@ export default function StarNpc({ playerPosRef }: Props) {
     }
   });
 
-  // Clear the interaction prompt when the NPC unmounts so the button
-  // doesn't stay stuck-on if the player navigates away.
+  // Drop our claim on unmount so a future interactable can take over.
   useEffect(() => {
-    return () => useInteraction.getState().setAvailable(false, null);
-  }, []);
+    return () => useInteraction.getState().release(id);
+  }, [id]);
 
   // -- Foot lift so feet rest on y=0 in the slumped pose -----------------
   // Skinned-mesh bbox depends on the current pose; computing once on
@@ -237,14 +236,14 @@ export default function StarNpc({ playerPosRef }: Props) {
   const [footLift, setFootLift] = useState(0);
   useEffect(() => {
     // Wait one frame so the mixer has applied the slumped pose to bones.
-    const id = requestAnimationFrame(() => {
+    const handle = requestAnimationFrame(() => {
       const inner = innerGroup.current;
       if (!inner) return;
       const box = new THREE.Box3().setFromObject(inner);
       // Convert world-y to local-y; inner group is at origin so they match.
       setFootLift(-box.min.y);
     });
-    return () => cancelAnimationFrame(id);
+    return () => cancelAnimationFrame(handle);
   }, [scene]);
 
   // Shadow flags
@@ -260,7 +259,7 @@ export default function StarNpc({ playerPosRef }: Props) {
   }, [scene]);
 
   return (
-    <group ref={group} position={[SPAWN_X, 0, SPAWN_Z]}>
+    <group ref={group} position={position}>
       <group ref={innerGroup} scale={SCALE} position-y={footLift}>
         <primitive object={scene} />
       </group>
