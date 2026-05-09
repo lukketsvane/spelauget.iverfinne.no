@@ -10,6 +10,8 @@ type GameState = {
   addCoin: () => void;
   takeDamage: () => void;
   addXp: (amount: number) => void;
+  // Reset to fresh start values. Used by the New Game button.
+  reset: () => void;
 };
 
 // Persisted across reloads. Methods are excluded via partialize so
@@ -34,6 +36,7 @@ export const useGame = create<GameState>()(
         }
         set({ xp, xpToNext, level });
       },
+      reset: () => set({ hearts: 3, coins: 0, level: 1, xp: 0, xpToNext: 10 }),
     }),
     {
       name: 'spelauget.game',

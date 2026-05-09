@@ -22,15 +22,26 @@ type Props = {
   playerPosRef: MutableRefObject<THREE.Vector3>;
 };
 
-// Always-dancing star NPC. The two 6.00 s gesture clips are cycled
-// continuously — A → B → A → … — from the moment the model loads, so
-// the character is "digging" when the player arrives. The bow gesture
-// no longer toggles state, it just kicks off the inline dialogue.
+// Star NPC. Phases:
+//   'dancing' — initial state. The two 6.00 s gestures are cycled
+//      continuously so the character is digging when the player arrives.
+//      The bow gesture starts dialogue but the dance keeps going while
+//      the player reads through the lines.
+//   'idle'    — after the player has talked to them once. Calm standing
+//      idle (the 15.38 s clip on loop). Stays here forever; further
+//      bows still trigger dialogue but no longer change the phase.
+type Phase = 'dancing' | 'idle';
+
 export default function StarNpc({ id, position, dialogue, playerPosRef }: Props) {
   const group = useRef<THREE.Group>(null);
   const innerGroup = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(URL);
   const { actions, names, mixer } = useAnimations(animations, group);
+
+  const phaseRef = useRef<Phase>('dancing');
+  // Set when our bow triggers the dialogue, so we only transition to
+  // idle when *our* conversation ends (not someone else's).
+  const ourDialogue = useRef(false);
 
   // Heuristic clip mapping. The two 6.00 s clips are the dance gestures
   // we cycle; idle (15.38 s) is a fallback only. Console logs the
@@ -79,10 +90,12 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
     if (first) first.reset().fadeIn(FADE).play();
   }, [clips]);
 
-  // Cycle gestureA ↔ gestureB on `finished` so the dance is unbroken.
+  // Cycle gestureA ↔ gestureB on `finished` so the dance is unbroken
+  // — but only while we're in the dancing phase.
   useEffect(() => {
     const onFinished = (e: { action: THREE.AnimationAction }) => {
       if (!clips) return;
+      if (phaseRef.current === 'idle') return;
       const next =
         e.action === clips.gestureA
           ? clips.gestureB ?? clips.gestureA ?? clips.idle
@@ -101,7 +114,8 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
   }, [clips, mixer]);
 
   // Bow trigger: starts the inline dialogue when the player emotes
-  // within range. No state machine — the dance keeps going regardless.
+  // within range. We mark ourselves as the source so the dialogue-end
+  // listener below knows whose conversation just finished.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
@@ -112,10 +126,37 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
       const dx = playerPosRef.current.x - g.position.x;
       const dz = playerPosRef.current.z - g.position.z;
       if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
+      ourDialogue.current = true;
       useDialogue.getState().start(dialogue);
     });
     return unsub;
   }, [playerPosRef, dialogue]);
+
+  // When *our* dialogue ends, transition from the dance into a calm
+  // standing idle. From then on the NPC stays in idle even if the
+  // player triggers further conversations — they've already been met.
+  useEffect(() => {
+    let wasActive = useDialogue.getState().active;
+    const unsub = useDialogue.subscribe((s) => {
+      if (s.active === wasActive) return;
+      wasActive = s.active;
+      if (s.active) return;
+      if (!ourDialogue.current) return;
+      ourDialogue.current = false;
+      if (phaseRef.current === 'idle' || !clips) return;
+      // Cross-fade gestures out, idle in.
+      clips.gestureA?.fadeOut(FADE * 2);
+      clips.gestureB?.fadeOut(FADE * 2);
+      const idle = clips.idle;
+      if (idle) {
+        idle.setLoop(THREE.LoopRepeat, Infinity);
+        idle.timeScale = 1;
+        idle.reset().fadeIn(FADE * 2).play();
+      }
+      phaseRef.current = 'idle';
+    });
+    return unsub;
+  }, [clips]);
 
   // Continuous tracking + interaction claim + T-pose safety net.
   useFrame((_, dt) => {
@@ -137,13 +178,22 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
     if (dist < TRIGGER_DISTANCE) useInteraction.getState().claim(id);
     else useInteraction.getState().release(id);
 
-    // Safety net: ensure something is always driving the bones.
+    // Safety net: ensure something is always driving the bones. The
+    // expected clip depends on the current phase.
     if (clips) {
-      const desired = clips.gestureA ?? clips.gestureB ?? clips.idle;
+      const inIdle = phaseRef.current === 'idle';
+      const desired = inIdle
+        ? clips.idle ?? clips.gestureA
+        : clips.gestureA ?? clips.gestureB ?? clips.idle;
       if (desired && desired.getEffectiveWeight() < 0.01) {
-        desired.setLoop(THREE.LoopOnce, 1);
-        desired.clampWhenFinished = true;
-        desired.timeScale = GESTURE_TIMESCALE;
+        if (inIdle) {
+          desired.setLoop(THREE.LoopRepeat, Infinity);
+          desired.timeScale = 1;
+        } else {
+          desired.setLoop(THREE.LoopOnce, 1);
+          desired.clampWhenFinished = true;
+          desired.timeScale = GESTURE_TIMESCALE;
+        }
         desired.reset().fadeIn(FADE).play();
       }
     }

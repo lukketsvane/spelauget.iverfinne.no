@@ -11,6 +11,8 @@ type LevelState = {
   // reset effects (NPC dialogue state, interaction claims).
   changeCounter: number;
   setLevel: (id: LevelId) => void;
+  // Hard reset to a fresh game on level1. Used by the New Game button.
+  reset: () => void;
 };
 
 // Persisted across reloads via localStorage. We keep methods + derived
@@ -26,6 +28,12 @@ export const useLevel = create<LevelState>()(
         set((s) => ({
           currentLevelId: id,
           playerSpawn: findPlayerSpawn(LEVELS[id]),
+          changeCounter: s.changeCounter + 1,
+        })),
+      reset: () =>
+        set((s) => ({
+          currentLevelId: 'level1',
+          playerSpawn: findPlayerSpawn(LEVELS.level1),
           changeCounter: s.changeCounter + 1,
         })),
     }),

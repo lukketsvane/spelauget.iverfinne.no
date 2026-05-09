@@ -8,24 +8,27 @@ import HUD from '@/hud/HUD';
 import EmoteButton from '@/hud/EmoteButton';
 import Dialogue from '@/hud/Dialogue';
 import LevelLabel from '@/hud/LevelLabel';
+import MainMenu from '@/hud/MainMenu';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 import ServiceWorker from './ServiceWorker';
+import { useMenu } from '@/store/menu';
 
 export default function Game() {
+  const inGame = useMenu((s) => s.inGame);
   return (
     <>
+      {/* Canvas is mounted from the start so heavy assets (GLBs, textures)
+          can preload while the menu is on screen. The MainMenu overlay
+          covers it and intercepts pointer events until the player picks
+          New Game / Continue. */}
       <Canvas
         shadows={{ type: THREE.PCFSoftShadowMap, enabled: true }}
-        // dpr < 1 renders the scene to a smaller framebuffer; the canvas
-        // is then stretched up to fit the layout via CSS image-rendering:
-        // pixelated, giving a crisp pixel-art upscale. 0.3 ≈ 1/3 the CSS
-        // pixel size — chunky pixels even at 100 % browser zoom.
+        // dpr < 1 renders to a smaller framebuffer; the canvas is then
+        // stretched up via CSS image-rendering: pixelated for the crisp
+        // pixel-art upscale.
         dpr={0.3}
-        gl={{
-          antialias: false,
-          powerPreference: 'high-performance',
-        }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.0;
@@ -38,12 +41,21 @@ export default function Game() {
           <Scene />
         </Suspense>
       </Canvas>
-      <KeyboardInput />
-      <HUD />
-      <PointerInput />
-      <EmoteButton />
-      <Dialogue />
-      <LevelLabel />
+
+      {/* In-game HUD only renders once the menu is dismissed. */}
+      {inGame && (
+        <>
+          <KeyboardInput />
+          <HUD />
+          <PointerInput />
+          <EmoteButton />
+          <Dialogue />
+          <LevelLabel />
+        </>
+      )}
+
+      {!inGame && <MainMenu />}
+
       <ServiceWorker />
     </>
   );

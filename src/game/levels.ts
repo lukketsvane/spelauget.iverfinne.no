@@ -128,7 +128,7 @@ const STJERNE_HALO: Stop[] = [
 export const LEVELS: Record<LevelId, LevelDefinition> = {
   level1: {
     id: 'level1',
-    name: 'Lysningen',
+    name: 'The Clearing',
     groundGradient: LYSNINGEN_GROUND,
     plantGradient: LYSNINGEN_PLANT,
     plantHaloGradient: LYSNINGEN_HALO,
@@ -150,22 +150,22 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'l1.star.welcome',
         position: [-4, -8],
         dialogue: [
-          { text: 'Stå stille et øyeblikk.' },
+          { text: 'Stand still for a moment.' },
           {
-            text: 'Hører du det? Under jorda. Det er ikke meg som lager den lyden. Jeg har ligget her i tre dager og lyttet, og jeg er ganske sikker nå.',
+            text: "Do you hear it? Under the earth. I'm not the one making that sound. I've lain here for three days listening, and I'm fairly sure now.",
           },
           {
-            text: 'Det er noen som puster der nede. Eller noen som snakker, men sakte, som om de glemmer ordene mellom hver gang.',
+            text: "There is someone breathing down there. Or someone speaking — slowly, as if they forget the words between each one.",
           },
-          { action: true, text: 'rekker fram noe gjennom jorda' },
+          { action: true, text: 'reaches something out through the soil' },
           {
-            text: 'Her. Den var ikke min. Jeg fant den under en stein som ikke ville flytte seg, helt til den plutselig ville. Sånne steiner skal man ikke stole på, men nøkler kan man stole på. Nøkler vil bare én ting.',
-          },
-          {
-            text: 'Bær den helt inn. Helt, helt inn. Til der hvor lysninga slutter å være lysning.',
+            text: "Here. It wasn't mine. I found it beneath a stone that wouldn't move, until it suddenly would. You shouldn't trust stones like that — but you can trust keys. Keys only want one thing.",
           },
           {
-            text: 'Og — hvis du møter en bil som står parkert hvor det ikke skal stå en bil: gå rundt. Ikke se inn.',
+            text: 'Carry it all the way in. All, all the way in. To where the clearing stops being a clearing.',
+          },
+          {
+            text: "And — if you meet a car parked where no car should be parked: walk around. Don't look inside.",
           },
         ],
       },
@@ -180,7 +180,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
 
   level2: {
     id: 'level2',
-    name: 'Stjerneengen',
+    name: 'The Star Meadow',
     groundGradient: STJERNE_GROUND,
     plantGradient: STJERNE_PLANT,
     plantHaloGradient: STJERNE_HALO,
@@ -218,9 +218,9 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'l2.star.elder',
         position: [0, 16],
         dialogue: [
-          { text: 'her er det enno blåare enn der borte' },
-          { text: 'om du går langt nok, kjem du fram til verdsenden' },
-          { text: 'eller kanskje berre tilbake til Lysningen' },
+          { text: "It's even bluer here than over there." },
+          { text: "If you walk far enough, you reach the world's end." },
+          { text: 'Or maybe just back to the Clearing.' },
         ],
       },
       {
@@ -228,10 +228,10 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'l2.boble.bobble',
         position: [8, -8],
         dialogue: [
-          { text: 'hei eg heiter Bobble' },
-          { text: 'velkommen til Stjerneengen' },
-          { text: 'her snur lyset blått om natta' },
-          { text: 'ein dag finn du kanskje vegen heim' },
+          { text: 'Hi. My name is Bobble.' },
+          { text: 'Welcome to the Star Meadow.' },
+          { text: 'Here the light turns blue at night.' },
+          { text: 'One day, you might find your way home.' },
         ],
       },
     ],
