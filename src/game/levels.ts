@@ -75,26 +75,32 @@ export type LevelDefinition = {
   spawns: Spawn[];
 };
 
-// --- Level 1 — Lysningen — moody violet/magenta -------------------------
+// --- Level 1 — Lysningen — bright luminous magenta/lavender -------------
+// Designed to glow against the dark fog like the bioluminescent forest
+// reference: most stops sit in the bright half of the spectrum so even
+// the dim parts of the source PNGs read as luminous flora.
 const LYSNINGEN_GROUND: Stop[] = [
-  [0.0, '#6b4f95'],
-  [0.35, '#9075b0'],
-  [0.7, '#b9a0d2'],
-  [1.0, '#e8d5f0'],
+  [0.0, '#8e6dc0'],
+  [0.35, '#b497d6'],
+  [0.7, '#d7c2eb'],
+  [1.0, '#f6e8fa'],
 ];
 const LYSNINGEN_PLANT: Stop[] = [
-  [0.0, '#241048'],
-  [0.35, '#7a2db3'],
-  [0.65, '#d35ab8'],
-  [0.85, '#ff9bd6'],
-  [1.0, '#ffe3f2'],
+  [0.0, '#5a1c95'],
+  [0.3, '#b446e0'],
+  [0.55, '#ff6fd0'],
+  [0.8, '#ffb0e6'],
+  [1.0, '#fff5fa'],
 ];
+// Halo: starts darkening earlier so a wider band of the source pixels
+// gets pushed into the bright additive layer, simulating bloom.
 const LYSNINGEN_HALO: Stop[] = [
   [0.0, '#000000'],
-  [0.55, '#000000'],
-  [0.7, '#5e1c83'],
-  [0.85, '#ff5fc0'],
-  [1.0, '#ffd2ec'],
+  [0.4, '#000000'],
+  [0.55, '#7a2db8'],
+  [0.75, '#ff60d0'],
+  [0.9, '#ffaee5'],
+  [1.0, '#fff5fc'],
 ];
 
 // --- Level 2 — Stjerneengen — cool aqua/teal ----------------------------
@@ -132,7 +138,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         kind: 'stone_hut',
         id: 'l1.hut.center',
         position: [0, -16],
-        scale: 1.6,
+        scale: 16,
       },
       {
         kind: 'rock_stack',
@@ -144,9 +150,23 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'l1.star.welcome',
         position: [-4, -8],
         dialogue: [
-          { text: 'hei velkommen til VITTA TIL IDA NEVERDAHL!' },
-          { text: 'HER ER DET JÆVKIG GOD PLASS' },
-          { text: 'IDA ER EN JÆVLA HORE' },
+          { text: 'Stå stille et øyeblikk.' },
+          {
+            text: 'Hører du det? Under jorda. Det er ikke meg som lager den lyden. Jeg har ligget her i tre dager og lyttet, og jeg er ganske sikker nå.',
+          },
+          {
+            text: 'Det er noen som puster der nede. Eller noen som snakker, men sakte, som om de glemmer ordene mellom hver gang.',
+          },
+          { action: true, text: 'rekker fram noe gjennom jorda' },
+          {
+            text: 'Her. Den var ikke min. Jeg fant den under en stein som ikke ville flytte seg, helt til den plutselig ville. Sånne steiner skal man ikke stole på, men nøkler kan man stole på. Nøkler vil bare én ting.',
+          },
+          {
+            text: 'Bær den helt inn. Helt, helt inn. Til der hvor lysninga slutter å være lysning.',
+          },
+          {
+            text: 'Og — hvis du møter en bil som står parkert hvor det ikke skal stå en bil: gå rundt. Ikke se inn.',
+          },
         ],
       },
       {
@@ -178,14 +198,14 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         kind: 'stone_hut',
         id: 'l2.hut.west',
         position: [-12, 4],
-        scale: 1.4,
+        scale: 14,
         rotation: 0.3,
       },
       {
         kind: 'stone_hut',
         id: 'l2.hut.east',
         position: [12, 4],
-        scale: 1.4,
+        scale: 14,
         rotation: -0.4,
       },
       {

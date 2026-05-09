@@ -7,11 +7,11 @@ import * as THREE from 'three';
 // Floating glowy dust around the player. Additive blending + a soft
 // radial alpha makes them read as bright pinpricks of light against the
 // dark scene; bloom pass turns them into proper bokeh-style sparkles.
-const COUNT = 350;
+const COUNT = 550;
 const RADIUS = 24; // metres from player at which particles cycle
 const MIN_HEIGHT = 0.2;
-const MAX_HEIGHT = 6;
-const PALETTE = ['#ffd5e8', '#a4d8ff', '#e0c0ff', '#ffffff', '#ff9bd6'];
+const MAX_HEIGHT = 7;
+const PALETTE = ['#ffd5e8', '#a4d8ff', '#ffaaf0', '#ffffff', '#ff9bd6', '#ffeaff'];
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -35,13 +35,14 @@ export default function Particles({ playerPosRef }: Props) {
       positions[i * 3 + 2] = Math.sin(angle) * r;
 
       tmp.set(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
-      // HDR-ish boost so bloom picks them up reliably.
-      const boost = 1.6 + Math.random() * 0.8;
+      // HDR boost — additive blending lets values >1 brighten the scene
+      // visibly even without a bloom post-process.
+      const boost = 2.4 + Math.random() * 1.4;
       colors[i * 3 + 0] = tmp.r * boost;
       colors[i * 3 + 1] = tmp.g * boost;
       colors[i * 3 + 2] = tmp.b * boost;
 
-      sizes[i] = 0.05 + Math.random() * 0.12;
+      sizes[i] = 0.06 + Math.random() * 0.14;
 
       drift[i * 3 + 0] = (Math.random() - 0.5) * 0.18;
       drift[i * 3 + 1] = 0.08 + Math.random() * 0.32;

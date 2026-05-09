@@ -168,8 +168,11 @@ export default function Plants({ playerPosRef }: Props) {
                 <planeGeometry args={[sw, sh]} />
                 <primitive object={m.base} attach="material" />
               </mesh>
+              {/* Halo plane is wider than the base sprite so the additive
+                  glow leaks past the silhouette — fake bloom rim without
+                  a postprocess pass. */}
               <mesh position={[0, 0, 0.005]}>
-                <planeGeometry args={[sw * 1.04, sh * 1.04]} />
+                <planeGeometry args={[sw * 1.2, sh * 1.2]} />
                 <primitive object={m.halo} attach="material" />
               </mesh>
             </group>

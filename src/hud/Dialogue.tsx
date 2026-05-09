@@ -59,7 +59,12 @@ export default function Dialogue() {
               {line.speaker}
             </div>
           )}
-          <div className="min-h-[3.5rem] text-base leading-relaxed text-violet-50">
+          <div
+            className={
+              'min-h-[3.5rem] text-base leading-relaxed ' +
+              (line?.action ? 'italic text-violet-200/70' : 'text-violet-50')
+            }
+          >
             {shown}
             {!isComplete && <span className="ml-1 inline-block animate-pulse text-pink-300">▋</span>}
             {isComplete && (

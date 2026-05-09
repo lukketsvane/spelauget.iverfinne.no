@@ -15,7 +15,7 @@ type Props = {
 // Static stone hut. The GLB is untextured (Tripo export with neutral
 // baseColor) so we tint the material into the moody palette via a
 // MeshLambertMaterial swap.
-export default function StoneHut({ position, scale = 1.4, rotationY = 0 }: Props) {
+export default function StoneHut({ position, scale = 14, rotationY = 0 }: Props) {
   const { scene } = useGLTF(URL);
 
   const cloned = useMemo(() => {

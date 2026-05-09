@@ -109,9 +109,9 @@ export default function Scene() {
     const hue = dayHueAngle(phase);
     updateGradientUniforms(hue, brightness);
 
-    if (ambientRef.current) ambientRef.current.intensity = 0.45 * brightness;
-    if (hemisphereRef.current) hemisphereRef.current.intensity = 0.55 * brightness;
-    if (light) light.intensity = 0.85 * brightness;
+    if (ambientRef.current) ambientRef.current.intensity = 1.1 * brightness;
+    if (hemisphereRef.current) hemisphereRef.current.intensity = 0.95 * brightness;
+    if (light) light.intensity = 1.4 * brightness;
 
     // Fog tint follows the cycle so distant geometry blends into a sky
     // that matches the current "time of day".

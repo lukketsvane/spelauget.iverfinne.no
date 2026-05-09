@@ -16,14 +16,15 @@ type Props = {
 // Stack of rocks loaded from STL. STL has no materials, so we attach a
 // stone-coloured Lambert with a touch of emissive for visibility in the
 // dark scene.
-export default function RockStack({ position, scale = 1.2, rotationY = 0 }: Props) {
+export default function RockStack({ position, scale = 12, rotationY = 0 }: Props) {
   const geom = useLoader(STLLoader, URL);
 
-  // STL geometry sometimes has flat normals or a Y-up offset baked in;
-  // re-centre to bbox bottom and recompute normals so it sits cleanly
-  // on the ground.
+  // STL ships Z-up by convention; three.js is Y-up — rotate so the
+  // stack stands upright. Then recompute bbox and lift so the bottom
+  // sits on y = 0.
   const prepared = useMemo(() => {
     const g = geom.clone();
+    g.rotateX(-Math.PI / 2);
     g.computeVertexNormals();
     g.computeBoundingBox();
     if (g.boundingBox) {

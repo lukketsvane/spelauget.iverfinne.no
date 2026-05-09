@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 
-export type DialogueLine = { speaker?: string; text: string };
+export type DialogueLine = {
+  speaker?: string;
+  text: string;
+  // When true, the line is rendered as a stage direction (italic, faded)
+  // rather than spoken speech. Useful for "*(reaches out…)*" beats.
+  action?: boolean;
+};
 
 type DialogueState = {
   active: boolean;
