@@ -68,13 +68,32 @@ export type TriloSpawn = {
   emissive?: string;
 };
 
+export type RelicSpawn = {
+  kind: 'relic';
+  id: string;
+  position: [number, number];
+  texture: string;
+  height?: number;
+  scale?: number;
+};
+
+export type CarSpawn = {
+  kind: 'car';
+  id: string;
+  position: [number, number];
+  scale?: number;
+  rotation?: number;
+};
+
 export type Spawn =
   | StarNpcSpawn
   | BobleNpcSpawn
   | PortalSpawn
   | StoneHutSpawn
   | RockStackSpawn
-  | TriloSpawn;
+  | TriloSpawn
+  | RelicSpawn
+  | CarSpawn;
 
 export type LevelDefinition = {
   id: LevelId;
@@ -82,6 +101,11 @@ export type LevelDefinition = {
   groundGradient: Stop[];
   plantGradient: Stop[];
   plantHaloGradient: Stop[];
+  // Gradient applied to relic-card sprites. Keeps relics tonally
+  // matched to the rest of the world. Tends to hold a wider mid-range
+  // than plantGradient so the painted detail in the relic art reads
+  // through the remap rather than getting crushed to one bright tone.
+  relicGradient: Stop[];
   playerSpawn: { x: number; z: number };
   spawns: Spawn[];
 };
@@ -113,6 +137,16 @@ const LYSNINGEN_HALO: Stop[] = [
   [0.9, '#ffaee5'],
   [1.0, '#fff5fc'],
 ];
+// Relic palette: a slightly more reserved cousin of the plant gradient.
+// Wider mid-range (more stops between dark and bright) so the painted
+// detail in the relic art remains readable after the luminance remap.
+const LYSNINGEN_RELIC: Stop[] = [
+  [0.0, '#2a0d4a'],
+  [0.25, '#5a2287'],
+  [0.5, '#a956c8'],
+  [0.75, '#f0a4dc'],
+  [1.0, '#fff0f8'],
+];
 
 // --- Level 2 — Stjerneengen — cool aqua/teal ----------------------------
 const STJERNE_GROUND: Stop[] = [
@@ -135,6 +169,15 @@ const STJERNE_HALO: Stop[] = [
   [0.85, '#3df0d8'],
   [1.0, '#ddfff8'],
 ];
+// Relic palette for Stjerneengen — keeps the cool teal mood but with a
+// wider mid-range so the relic paintings keep their internal contrast.
+const STJERNE_RELIC: Stop[] = [
+  [0.0, '#0d2638'],
+  [0.25, '#264e6a'],
+  [0.5, '#3d96a6'],
+  [0.75, '#9be0d4'],
+  [1.0, '#f0fff8'],
+];
 
 export const LEVELS: Record<LevelId, LevelDefinition> = {
   level1: {
@@ -143,6 +186,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
     groundGradient: LYSNINGEN_GROUND,
     plantGradient: LYSNINGEN_PLANT,
     plantHaloGradient: LYSNINGEN_HALO,
+    relicGradient: LYSNINGEN_RELIC,
     playerSpawn: { x: 0, z: 0 },
     spawns: [
       {
@@ -165,17 +209,17 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
             text: "Do you hear it? Under the earth. I'm not the one making that sound. I've lain here for three days listening, and I'm fairly sure now.",
           },
           {
-            text: "There is someone breathing down there. Or someone speaking — slowly, as if they forget the words between each one.",
+            text: "There is someone breathing down there. Or someone speaking, slowly, as if they forget the words between each one.",
           },
           { action: true, text: 'reaches something out through the soil' },
           {
-            text: "Here. It wasn't mine. I found it beneath a stone that wouldn't move, until it suddenly would. You shouldn't trust stones like that — but you can trust keys. Keys only want one thing.",
+            text: "Here. It wasn't mine. I found it beneath a stone that wouldn't move, until it suddenly would. You shouldn't trust stones like that, but you can trust keys. Keys only want one thing.",
           },
           {
             text: 'Carry it all the way in. All, all the way in. To where the clearing stops being a clearing.',
           },
           {
-            text: "And — if you meet a car parked where no car should be parked: walk around. Don't look inside.",
+            text: "And, if you meet a car parked where no car should be parked: walk around. Don't look inside.",
           },
         ],
       },
@@ -194,6 +238,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
     groundGradient: STJERNE_GROUND,
     plantGradient: STJERNE_PLANT,
     plantHaloGradient: STJERNE_HALO,
+    relicGradient: STJERNE_RELIC,
     playerSpawn: { x: 0, z: 0 },
     spawns: [
       {
@@ -236,7 +281,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'l2.boble.bobble',
         position: [8, -8],
         dialogue: [
-          { text: "Oh — a fresh face. The lights felt it before I did." },
+          { text: 'Oh, a fresh face. The lights felt it before I did.' },
           { text: "I'm Bobble. I don't have legs. Just opinions, and wind." },
           { action: true, text: 'tilts, drifts a hand-width sideways, drifts back' },
           {
@@ -252,6 +297,44 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
             text: "Go find what's waiting at the edge. I'd come along, but I'd just float off.",
           },
         ],
+      },
+      // Sparse relic-cards scattered to the edges of the meadow.
+      // Filenames have a space in them — encode the URL.
+      {
+        kind: 'relic',
+        id: 'l2.relic.north',
+        position: [-2, -22],
+        texture: '/relic1%201.png',
+        height: 5.5,
+      },
+      {
+        kind: 'relic',
+        id: 'l2.relic.east',
+        position: [22, 6],
+        texture: '/relic3%201.png',
+        height: 6,
+      },
+      {
+        kind: 'relic',
+        id: 'l2.relic.south',
+        position: [-4, 24],
+        texture: '/relic2%201.png',
+        height: 4,
+      },
+      {
+        kind: 'relic',
+        id: 'l2.relic.far-west',
+        position: [-22, 16],
+        texture: '/relic4%201.png',
+        height: 4,
+      },
+      // The car the digger warned about — parked where no car should
+      // be parked. Tucked into the north-west corner among the plants.
+      {
+        kind: 'car',
+        id: 'l2.car.parked',
+        position: [-20, -14],
+        rotation: 1.2,
       },
       // Three trilo decorations scattered around the meadow — picked
       // teal/cyan tints to match the level palette.

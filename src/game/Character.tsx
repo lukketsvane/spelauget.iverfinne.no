@@ -194,6 +194,17 @@ export default function Character({ positionRef }: Props) {
     const g = group.current;
     if (!g) return;
 
+    // Freeze all movement / input during the cinematic teleport fade.
+    // Animation still ticks (mixer is driven by drei) so the character
+    // stays in idle pose; we just don't read input or move them. The
+    // changeCounter subscription above handles the actual teleport at
+    // the 'out' → 'in' boundary while the screen is fully black.
+    if (useLevel.getState().transitionPhase !== 'idle') {
+      positionRef.current.copy(g.position);
+      playerWorldPos.copy(g.position);
+      return;
+    }
+
     const state = useInput.getState();
 
     let dirX = 0;

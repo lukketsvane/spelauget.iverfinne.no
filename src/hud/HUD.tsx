@@ -36,8 +36,9 @@ export default function HUD() {
         )}
       </div>
 
-      {/* Top-right: XP. Pushed below the pause button (top-4 right-4). */}
-      <div className="absolute right-4 top-20 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+      {/* Top-right: XP. Pause button now lives in the bottom-left so
+          this corner is back to its normal top spot. */}
+      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
         <div className="text-xs">
           {xp} / {xpToNext} XP
         </div>

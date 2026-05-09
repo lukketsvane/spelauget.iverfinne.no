@@ -43,8 +43,17 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
 
   // Map clips by duration. Reading directly from `animations` so we
   // don't hit the drei lazy-init zero-duration trap.
-  //   longest    → idle (ambient float / sway)
-  //   ~6.00 s ×2 → gestureA / gestureB (talking poses)
+  //   longest                   → idle (ambient float / sway)
+  //   medium gesture-y duration → gestureA / gestureB (talking poses)
+  //   shortest unused           → walk (Tripo's typical step cycle)
+  //
+  // The walk pick used to require duration ∈ [1.8, 3.5] and fell back
+  // to "second-shortest" — that fallback frequently grabbed a gesture
+  // by accident on rigs whose walk lives outside that window, so the
+  // follow drift played a head-bob instead of a step. We now always
+  // resolve walk to the shortest clip that ISN'T already used as
+  // idle / gesture, by name preference if a "walk"/"move"/"run" clip
+  // exists.
   const clips = useMemo(() => {
     if (animations.length === 0) return null;
     const sorted = [...animations].sort((a, b) => b.duration - a.duration);
@@ -55,13 +64,46 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
         sorted.map((c) => `${c.name}=${c.duration.toFixed(2)}s`).join(', '),
       );
     }
-    // Pick gestures from the medium-length cluster (skip the long
-    // idles, skip the very short walk/run/turn clips).
-    const gestures = sorted.filter((c) => c.duration >= 4 && c.duration <= 8);
+
+    const idle = sorted[0] ?? null;
+    const gestures = sorted
+      .slice(1)
+      .filter((c) => c.duration >= 4 && c.duration <= 8)
+      .slice(0, 2);
+
+    // Reserve idle + chosen gestures so the walk picker can't grab them.
+    const reserved = new Set<THREE.AnimationClip>();
+    if (idle) reserved.add(idle);
+    for (const g of gestures) reserved.add(g);
+
+    // Prefer a clip whose name hints at locomotion. Falls back to the
+    // shortest clip among the ones we haven't already reserved — for
+    // most rigs that's the actual step cycle.
+    const remaining = sorted.filter((c) => !reserved.has(c));
+    const walkByName = remaining.find((c) => /walk|move|run|step/i.test(c.name));
+    const shortestRemaining = [...remaining].sort((a, b) => a.duration - b.duration)[0];
+    // Last-ditch: if we somehow reserved everything, accept the shortest
+    // overall clip even if it doubles as idle, to avoid a null walk.
+    const shortestOverall = [...sorted].sort((a, b) => a.duration - b.duration)[0];
+    const walk = walkByName ?? shortestRemaining ?? shortestOverall ?? null;
+
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[BobleNpc] resolved → idle:',
+        idle?.name,
+        'gestures:',
+        gestures.map((g) => g.name),
+        'walk:',
+        walk?.name,
+      );
+    }
+
     return {
-      idle: actions[sorted[0]?.name] ?? null,
+      idle: idle ? actions[idle.name] ?? null : null,
       gestureA: gestures[0] ? actions[gestures[0].name] ?? null : null,
       gestureB: gestures[1] ? actions[gestures[1].name] ?? null : null,
+      walk: walk ? actions[walk.name] ?? null : null,
     };
   }, [animations, actions]);
 
@@ -70,6 +112,9 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
   const phaseRef = useRef<Phase>('idle');
   const ourDialogue = useRef(false);
   const followingRef = useRef(false);
+  // Tracks which clip is currently driving the bones during follow
+  // mode so we only cross-fade on actual transitions, not every frame.
+  const followAnimRef = useRef<'idle' | 'walk' | null>(null);
 
   // Mount: configure clips and start the idle loop.
   useEffect(() => {
@@ -168,10 +213,30 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
     const dz = playerPosRef.current.z - g.position.z;
     const dist = Math.hypot(dx, dz);
 
-    if (followingRef.current && dist > FOLLOW_DISTANCE) {
-      const step = Math.min(FOLLOW_SPEED * dt, dist - FOLLOW_DISTANCE);
-      g.position.x += (dx / dist) * step;
-      g.position.z += (dz / dist) * step;
+    // Follow drift + walk/idle animation swap.
+    if (followingRef.current && clips) {
+      const wantsWalk = dist > FOLLOW_DISTANCE;
+      const targetAnim: 'idle' | 'walk' = wantsWalk ? 'walk' : 'idle';
+      // Swap clips on transition only — never every frame.
+      if (followAnimRef.current !== targetAnim) {
+        followAnimRef.current = targetAnim;
+        if (targetAnim === 'walk' && clips.walk) {
+          clips.idle?.fadeOut(FADE);
+          clips.walk.setLoop(THREE.LoopRepeat, Infinity);
+          clips.walk.timeScale = 1;
+          clips.walk.reset().fadeIn(FADE).play();
+        } else if (targetAnim === 'idle' && clips.idle) {
+          clips.walk?.fadeOut(FADE);
+          clips.idle.setLoop(THREE.LoopRepeat, Infinity);
+          clips.idle.timeScale = 1;
+          clips.idle.reset().fadeIn(FADE).play();
+        }
+      }
+      if (wantsWalk) {
+        const step = Math.min(FOLLOW_SPEED * dt, dist - FOLLOW_DISTANCE);
+        g.position.x += (dx / dist) * step;
+        g.position.z += (dz / dist) * step;
+      }
     }
 
     facingYaw.current = Math.atan2(dx, dz) - Math.PI / 2;
@@ -194,12 +259,16 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
     }
 
     // Safety: if no clip is driving the bones (paused tab etc.), restart
-    // the active phase's primary clip so we never sit at bind pose.
+    // the active state's primary clip so we never sit at bind pose.
     if (clips) {
-      const desired =
-        phaseRef.current === 'talking'
-          ? clips.gestureA ?? clips.gestureB ?? clips.idle
-          : clips.idle;
+      let desired: THREE.AnimationAction | null = null;
+      if (phaseRef.current === 'talking') {
+        desired = clips.gestureA ?? clips.gestureB ?? clips.idle;
+      } else if (followingRef.current && followAnimRef.current === 'walk') {
+        desired = clips.walk ?? clips.idle;
+      } else {
+        desired = clips.idle;
+      }
       if (desired && desired.getEffectiveWeight() < 0.01) {
         if (phaseRef.current === 'talking') {
           desired.setLoop(THREE.LoopOnce, 1);

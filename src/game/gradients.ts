@@ -61,9 +61,9 @@ export function makeGradientTexture(stops: Stop[], width = 256): THREE.DataTextu
 
 // All gradient-mapped materials register their uniforms here so we can
 // drive day/night and per-level palette swaps for every surface at
-// once. `role` tags ground vs plant vs plant-halo so the level
+// once. `role` tags ground vs plant vs plant-halo vs relic so the level
 // transition can swap them independently.
-export type GradientRole = 'ground' | 'plant' | 'plant_halo';
+export type GradientRole = 'ground' | 'plant' | 'plant_halo' | 'relic';
 
 type GradientUniforms = {
   uHueAngle: { value: number };

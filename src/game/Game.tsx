@@ -11,6 +11,7 @@ import LevelLabel from '@/hud/LevelLabel';
 import MainMenu from '@/hud/MainMenu';
 import PauseMenuButton from '@/hud/PauseMenuButton';
 import BlackOverlay from '@/hud/BlackOverlay';
+import TeleportOverlay from '@/hud/TeleportOverlay';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 import BackgroundMusic from './BackgroundMusic';
@@ -61,6 +62,7 @@ export default function Game() {
       {!inGame && <MainMenu />}
 
       <BlackOverlay />
+      <TeleportOverlay />
       <BackgroundMusic />
       <ServiceWorker />
     </>

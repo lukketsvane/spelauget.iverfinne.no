@@ -77,6 +77,8 @@ export default function Scene() {
           s.kind === 'stone_hut' ||
           s.kind === 'rock_stack' ||
           s.kind === 'trilo' ||
+          s.kind === 'relic' ||
+          s.kind === 'car' ||
           s.kind === 'portal',
       )
       .map((s) => {
@@ -88,9 +90,13 @@ export default function Scene() {
               ? 5
               : s.kind === 'stone_hut'
                 ? 7
-                : s.kind === 'portal'
-                  ? 4
-                  : 3.5;
+                : s.kind === 'car'
+                  ? 4.5
+                  : s.kind === 'portal'
+                    ? 4
+                    : s.kind === 'relic'
+                      ? 2.5
+                      : 3.5;
         return { x: s.position[0], z: s.position[1], r };
       });
   }, [currentLevelId]);
@@ -99,13 +105,16 @@ export default function Scene() {
     const g = makeGradientTexture(def.groundGradient);
     const p = makeGradientTexture(def.plantGradient);
     const h = makeGradientTexture(def.plantHaloGradient);
+    const r = makeGradientTexture(def.relicGradient);
     setGradientTexture('ground', g);
     setGradientTexture('plant', p);
     setGradientTexture('plant_halo', h);
+    setGradientTexture('relic', r);
     return () => {
       g.dispose();
       p.dispose();
       h.dispose();
+      r.dispose();
     };
   }, [currentLevelId]);
 

@@ -40,3 +40,30 @@ canvas {
 .animate-fade-from-black {
   animation: fade-from-black 2800ms ease-out forwards;
 }
+
+/* Cinematic portal teleport — black overlay fades IN (out of view → in
+   front), the level swaps under the cover, then fades OUT again. Both
+   halves match useLevel.FADE_MS (1400 ms) so the visible motion lines
+   up with the JS-driven phase swap. */
+@keyframes teleport-fade-out {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-teleport-fade-out {
+  animation: teleport-fade-out 1400ms ease-in forwards;
+}
+@keyframes teleport-fade-in {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.animate-teleport-fade-in {
+  animation: teleport-fade-in 1400ms ease-out forwards;
+}

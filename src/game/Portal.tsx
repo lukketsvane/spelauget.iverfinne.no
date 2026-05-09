@@ -119,18 +119,23 @@ export default function Portal({
   });
 
   // Subscribe to bow trigger; teleport only if the player has the key.
+  // teleport() runs the cinematic fade — fade-to-black, swap level
+  // mid-cover, fade-from-black — so the world transition reads as a
+  // dramatic moment rather than an instant pop.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
       if (!useGame.getState().hasKey) return;
+      // Already mid-teleport? Don't queue a second one.
+      if (useLevel.getState().transitionPhase !== 'idle') return;
       const g = groupRef.current;
       if (!g) return;
       const dx = playerPosRef.current.x - g.position.x;
       const dz = playerPosRef.current.z - g.position.z;
       if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
-      useLevel.getState().setLevel(targetLevel);
+      useLevel.getState().teleport(targetLevel);
     });
     return unsub;
   }, [id, playerPosRef, targetLevel]);

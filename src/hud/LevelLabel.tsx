@@ -9,7 +9,7 @@ export default function LevelLabel() {
   const id = useLevel((s) => s.currentLevelId);
   const name = LEVELS[id].name;
   return (
-    <div className="pointer-events-none absolute bottom-4 left-4 z-10 select-none text-xs uppercase tracking-[0.22em] text-violet-200/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]">
+    <div className="pointer-events-none absolute bottom-20 left-4 z-10 select-none text-xs uppercase tracking-[0.22em] text-violet-200/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]">
       {name}
     </div>
   );

@@ -1,21 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAudio } from '@/store/audio';
 import { useGame } from '@/store/game';
 import { useLevel } from '@/store/level';
 import { useMenu } from '@/store/menu';
 
-// Splash menu shown before the game canvas takes focus. Pixel-art
-// background fills the screen; buttons stack at the bottom and swap
-// in-place between the "main" set (New Game / Continue / Settings) and
-// the "settings" set (Erase Save / Back). No modal overlay — keeps the
-// pixel-art frame intact.
+// Splash menu shown before the game canvas takes focus, and as a
+// pause overlay when the player taps the menu button mid-game.
+//
+// Two visual modes:
+//   - Splash (first ever visit): full pixel-art bg image fills the screen.
+//   - Pause (after first start): just a dim translucent overlay so the
+//     game canvas behind stays visible.
 export default function MainMenu() {
   const startGame = useMenu((s) => s.startGame);
   const startNewGame = useMenu((s) => s.startNewGame);
   const openSettings = useMenu((s) => s.openSettings);
   const closeSettings = useMenu((s) => s.closeSettings);
   const showSettings = useMenu((s) => s.showSettings);
+  const hasStartedGame = useMenu((s) => s.hasStartedGame);
 
   const [hasSave, setHasSave] = useState(false);
   useEffect(() => {
@@ -26,7 +30,6 @@ export default function MainMenu() {
   const handleNewGame = () => {
     useLevel.getState().reset();
     useGame.getState().reset();
-    // startNewGame triggers the slow fade-from-black overlay.
     startNewGame();
   };
 
@@ -43,20 +46,29 @@ export default function MainMenu() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-end overflow-hidden bg-black">
-      <img
-        src="/menu/menu_screen.png"
-        alt=""
-        className="absolute inset-0 -z-10 h-full w-full object-cover"
-        style={{ imageRendering: 'pixelated' }}
-        aria-hidden
-      />
+    <div
+      className={
+        'fixed inset-0 z-50 flex flex-col items-center justify-end overflow-hidden ' +
+        (hasStartedGame ? 'bg-black/70 backdrop-blur-sm' : 'bg-black')
+      }
+    >
+      {/* Splash background — only on the very first visit, before the
+          player has ever entered the game. After that the menu is a
+          pause overlay and we want the canvas to show through. */}
+      {!hasStartedGame && (
+        <img
+          src="/menu/menu_screen.png"
+          alt=""
+          className="absolute inset-0 -z-10 h-full w-full object-cover"
+          style={{ imageRendering: 'pixelated' }}
+          aria-hidden
+        />
+      )}
 
       <div className="mb-12 flex flex-col items-center gap-3">
         {!showSettings ? (
           <>
-            {/* Continue is shown first when a save exists so returning
-                players don't have to scan past New Game. */}
+            {/* Continue first when a save exists. */}
             {hasSave && (
               <ImageButton src="/menu/bt_continue.png" alt="Continue" onClick={startGame} />
             )}
@@ -64,12 +76,7 @@ export default function MainMenu() {
             <ImageButton src="/menu/bt_settings.png" alt="Settings" onClick={openSettings} />
           </>
         ) : (
-          <>
-            <TextButton onClick={handleErase} variant="danger">
-              Erase Save
-            </TextButton>
-            <TextButton onClick={closeSettings}>Back</TextButton>
-          </>
+          <SettingsPanel onErase={handleErase} onBack={closeSettings} />
         )}
       </div>
     </div>
@@ -103,9 +110,57 @@ function ImageButton({
   );
 }
 
-// Plain-styled button matching the pixel-art frame of the menu image
-// buttons (same width, same glow, same text feel) but rendered from
-// plain CSS so we can use it for actions we don't have a PNG for.
+function SettingsPanel({ onErase, onBack }: { onErase: () => void; onBack: () => void }) {
+  const musicVolume = useAudio((s) => s.musicVolume);
+  const setMusicVolume = useAudio((s) => s.setMusicVolume);
+
+  return (
+    <div className="flex w-64 max-w-[80vw] flex-col gap-3">
+      <VolumeSlider
+        label="Music"
+        value={musicVolume}
+        onChange={setMusicVolume}
+      />
+      <TextButton onClick={onErase} variant="danger">
+        Erase Save
+      </TextButton>
+      <TextButton onClick={onBack}>Back</TextButton>
+    </div>
+  );
+}
+
+function VolumeSlider({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3 backdrop-blur">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-[0.22em] text-pink-200">
+          {label}
+        </span>
+        <span className="text-xs tabular-nums text-violet-200">
+          {Math.round(value * 100)}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="block w-full accent-pink-400"
+      />
+    </div>
+  );
+}
+
 function TextButton({
   children,
   onClick,
@@ -124,7 +179,7 @@ function TextButton({
       type="button"
       onClick={onClick}
       className={
-        'block w-64 max-w-[80vw] rounded-md border-2 px-4 py-3 text-sm font-bold uppercase tracking-[0.22em] backdrop-blur transition active:scale-95 ' +
+        'block w-full rounded-md border-2 px-4 py-3 text-sm font-bold uppercase tracking-[0.22em] backdrop-blur transition active:scale-95 ' +
         palette
       }
     >
