@@ -22,9 +22,10 @@ export const CHARACTER = {
   // Visual scale applied to the GLB.
   scale: 2.0,
   // Radians added to move-direction yaw to compensate for the GLB's local
-  // forward axis. Sligo's mesh has local +Z as the visual front, so no
-  // offset is needed. Try π, ±π/2 if a future model points elsewhere.
-  modelForwardYaw: 0,
+  // forward axis. Sligo's mesh has local +X as the visual front (Tripo
+  // exports characters along the X axis), so we rotate -π/2 to align.
+  // Try 0, π, π/2 for future models pointing along ±Z or -X.
+  modelForwardYaw: -Math.PI / 2,
 } as const;
 
 // Animation roles are picked at runtime by clip duration in Character.tsx:
