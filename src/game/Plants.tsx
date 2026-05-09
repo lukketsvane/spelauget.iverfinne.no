@@ -4,7 +4,12 @@ import { useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { applyGradientMap, makeGradientTexture, PLANT_GRADIENT } from './gradients';
+import {
+  applyGradientMap,
+  makeGradientTexture,
+  PLANT_GRADIENT,
+  PLANT_HALO_GRADIENT,
+} from './gradients';
 
 const PLANT_SOURCES = [
   { url: '/plante_01.png', height: 2.4 },
@@ -48,23 +53,34 @@ export default function Plants({ playerPosRef }: Props) {
     [textures],
   );
 
-  // One material per source texture, gradient-remapped. Sharing the
-  // material across all instances of the same plant is cheap and avoids
-  // recompiling the gradient shader hundreds of times.
+  // Two materials per source: a base gradient-mapped pass and an additive
+  // halo pass. The halo's gradient blacks out the dark half of the source
+  // texture so only the bright edges contribute, giving a self-emissive
+  // glow without a post-processing bloom step.
   const gradientTex = useMemo(() => makeGradientTexture(PLANT_GRADIENT), []);
+  const haloTex = useMemo(() => makeGradientTexture(PLANT_HALO_GRADIENT), []);
   const materials = useMemo(() => {
     return PLANT_SOURCES.map((_, i) => {
-      const m = new THREE.MeshBasicMaterial({
+      const base = new THREE.MeshBasicMaterial({
         map: textures[i],
         transparent: true,
         alphaTest: 0.5,
         side: THREE.DoubleSide,
         toneMapped: false,
       });
-      applyGradientMap(m, gradientTex);
-      return m;
+      applyGradientMap(base, gradientTex);
+      const halo = new THREE.MeshBasicMaterial({
+        map: textures[i],
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      });
+      applyGradientMap(halo, haloTex);
+      return { base, halo };
     });
-  }, [textures, gradientTex]);
+  }, [textures, gradientTex, haloTex]);
 
   const lastChunk = useRef<{ cx: number; cz: number } | null>(null);
   const [chunks, setChunks] = useState<Map<string, Chunk>>(() => new Map());
@@ -112,17 +128,24 @@ export default function Plants({ playerPosRef }: Props) {
           const { w, h } = dims[p.idx];
           const sw = w * p.scale;
           const sh = h * p.scale;
+          const m = materials[p.idx];
           return (
-            <mesh
+            <group
               key={`${chunk.key}:${i}`}
               position={[p.x, sh / 2, p.z]}
               rotation={[0, FACE_CAMERA_Y, 0]}
               scale={[p.flip ? -1 : 1, 1, 1]}
-              castShadow
             >
-              <planeGeometry args={[sw, sh]} />
-              <primitive object={materials[p.idx]} attach="material" />
-            </mesh>
+              <mesh castShadow>
+                <planeGeometry args={[sw, sh]} />
+                <primitive object={m.base} attach="material" />
+              </mesh>
+              {/* Additive halo nudged forward so it z-sorts above the base. */}
+              <mesh position={[0, 0, 0.005]}>
+                <planeGeometry args={[sw * 1.04, sh * 1.04]} />
+                <primitive object={m.halo} attach="material" />
+              </mesh>
+            </group>
           );
         }),
       )}

@@ -103,3 +103,14 @@ export const PLANT_GRADIENT: Stop[] = [
   [0.85, '#ff9bd6'],
   [1.0, '#ffe3f2'],
 ];
+
+// Additive halo pass on top of each plant: only the brighter half of the
+// source contributes, and we map it into hot magentas so the silhouettes
+// glow against the night without needing a bloom post-process.
+export const PLANT_HALO_GRADIENT: Stop[] = [
+  [0.0, '#000000'],
+  [0.55, '#000000'],
+  [0.7, '#5e1c83'],
+  [0.85, '#ff5fc0'],
+  [1.0, '#ffd2ec'],
+];

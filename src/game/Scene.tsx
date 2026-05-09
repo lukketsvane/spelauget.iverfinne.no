@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera } from '@react-three/drei';
-import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import Character from './Character';
 import Ground from './Ground';
@@ -114,17 +113,6 @@ export default function Scene() {
       <Plants playerPosRef={characterPos} />
       <Particles playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
-
-      {/* Bloom lifts the gradient-mapped highlights and HDR particles into
-          a soft glow — the single biggest contributor to the moody look. */}
-      <EffectComposer>
-        <Bloom
-          intensity={0.9}
-          luminanceThreshold={0.55}
-          luminanceSmoothing={0.4}
-          mipmapBlur
-        />
-      </EffectComposer>
     </>
   );
 }
