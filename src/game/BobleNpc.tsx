@@ -116,14 +116,17 @@ export default function BobleNpc({
 
     // Prefer a clip whose name hints at locomotion. Falls back to the
     // shortest clip among the ones we haven't already reserved — for
-    // most rigs that's the actual step cycle.
+    // most rigs that's the actual step cycle. If nothing's left
+    // (rig only has idle / gestures), we leave walk as null and a
+    // procedural walk-bob in useFrame keeps Bobble visibly moving.
+    // Crucially we DON'T fall through to the overall-shortest clip
+    // here, because that often equals idle — playing it via the
+    // walk-swap path tries to crossfade a clip with itself and ends
+    // up with a frozen rig.
     const remaining = sorted.filter((c) => !reserved.has(c));
     const walkByName = remaining.find((c) => /walk|move|run|step/i.test(c.name));
     const shortestRemaining = [...remaining].sort((a, b) => a.duration - b.duration)[0];
-    // Last-ditch: if we somehow reserved everything, accept the shortest
-    // overall clip even if it doubles as idle, to avoid a null walk.
-    const shortestOverall = [...sorted].sort((a, b) => a.duration - b.duration)[0];
-    const walk = walkByName ?? shortestRemaining ?? shortestOverall ?? null;
+    const walk = walkByName ?? shortestRemaining ?? null;
 
     if (process.env.NODE_ENV !== 'production') {
       // eslint-disable-next-line no-console
@@ -153,6 +156,10 @@ export default function BobleNpc({
   // Tracks which clip is currently driving the bones during follow
   // mode so we only cross-fade on actual transitions, not every frame.
   const followAnimRef = useRef<'idle' | 'walk' | null>(null);
+  // Phase accumulator for the procedural walk bob (vertical sine on
+  // innerGroup.position.y while walking). Advanced only when
+  // wantsWalk is true so a stopped Bobble settles to flat.
+  const walkBobPhase = useRef(0);
 
   // Mount: configure clips and start the idle loop.
   useEffect(() => {
@@ -283,6 +290,27 @@ export default function BobleNpc({
         const step = Math.min(FOLLOW_SPEED * dt, dist - FOLLOW_DISTANCE);
         g.position.x += (dx / dist) * step;
         g.position.z += (dz / dist) * step;
+      }
+
+      // Procedural walk bob. Bobble's GLB walk clip is often subtle
+      // (the rig is a floating head with no legs), so we layer a
+      // visible bounce + slight forward tilt on the inner group
+      // whenever the state machine says she's walking. Smoothly
+      // returns to flat when she stops. Independent of the GLB
+      // animation so it works even on rigs that have no walk clip
+      // at all (clips.walk null).
+      const inner = innerGroup.current;
+      if (inner) {
+        const isWalking = wantsWalk;
+        if (isWalking) walkBobPhase.current += dt * 5;
+        const targetBob = isWalking
+          ? Math.abs(Math.sin(walkBobPhase.current)) * 0.45
+          : 0;
+        const currentBobOffset = inner.position.y - footLift;
+        inner.position.y =
+          footLift + THREE.MathUtils.lerp(currentBobOffset, targetBob, 0.18);
+        const targetTilt = isWalking ? 0.1 : 0;
+        inner.rotation.x = THREE.MathUtils.lerp(inner.rotation.x, targetTilt, 0.1);
       }
 
       // Lead-to arrival check: once the player AND Bobble are both
