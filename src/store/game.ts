@@ -78,14 +78,18 @@ export const useGame = create<GameState>()(
       }),
       // v1 → v2: forward-port everything, default the new bobbleVanished
       // flag to false so existing saves still trigger Bobble's lead.
+      // zustand's `migrate` is typed to return the full state shape,
+      // so we cast through unknown — the partialize whitelist below
+      // means consumers only see the fields we actually persist
+      // anyway.
       migrate: (persistedState, version) => {
         if (version < 2 && persistedState && typeof persistedState === 'object') {
           return {
             ...(persistedState as Record<string, unknown>),
             bobbleVanished: false,
-          };
+          } as unknown as GameState;
         }
-        return persistedState as Partial<GameState>;
+        return persistedState as GameState;
       },
     },
   ),
