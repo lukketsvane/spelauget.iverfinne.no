@@ -99,7 +99,8 @@ export default function Scene() {
           s.kind === 'purple_coral' ||
           s.kind === 'purple_coral_alt' ||
           s.kind === 'purple_stone_cairn' ||
-          s.kind === 'tangled_root_sculpture',
+          s.kind === 'tangled_root_sculpture' ||
+          s.kind === 'crystal_altar',
       )
       .map((s) => {
         // Rough per-kind clearance radius. Big NPCs get the widest ring.
@@ -116,7 +117,9 @@ export default function Scene() {
                     ? 4
                     : s.kind === 'relic' || s.kind === 'remnant'
                       ? 2.5
-                      : 3;
+                      : s.kind === 'crystal_altar'
+                        ? 3.5
+                        : 3;
         return { x: s.position[0], z: s.position[1], r };
       });
   }, []);

@@ -15,12 +15,24 @@ type GameState = {
   // vanishes at that point and the car becomes interactable as a
   // gateway to The Remnants (level 3).
   bobbleVanished: boolean;
+  // Spawn ids the player has picked up (crystals, etc). Lets us
+  // remove the floating prop on revisit without it re-rendering.
+  collectedItems: string[];
+  // Spawn ids of altars the player has activated. One-shot per
+  // altar — the visible crystal vanishes and the bow no longer
+  // claims the interaction slot.
+  activatedAltars: string[];
   addCoin: () => void;
   addCrystal: () => void;
+  // Decrements the crystal stash by 1. Returns true if a crystal
+  // was actually consumed, false if the inventory was empty.
+  useCrystal: () => boolean;
   takeDamage: () => void;
   addXp: (amount: number) => void;
   giveKey: () => void;
   vanishBobble: () => void;
+  collectItem: (id: string) => void;
+  activateAltar: (id: string) => void;
   reset: () => void;
 };
 
@@ -36,8 +48,16 @@ export const useGame = create<GameState>()(
       xpToNext: 10,
       hasKey: false,
       bobbleVanished: false,
+      collectedItems: [],
+      activatedAltars: [],
       addCoin: () => set({ coins: get().coins + 1 }),
       addCrystal: () => set({ crystals: get().crystals + 1 }),
+      useCrystal: () => {
+        const cur = get().crystals;
+        if (cur <= 0) return false;
+        set({ crystals: cur - 1 });
+        return true;
+      },
       takeDamage: () => set({ hearts: Math.max(0, get().hearts - 1) }),
       addXp: (amount) => {
         let { xp, xpToNext, level } = get();
@@ -51,6 +71,16 @@ export const useGame = create<GameState>()(
       },
       giveKey: () => set({ hasKey: true }),
       vanishBobble: () => set({ bobbleVanished: true }),
+      collectItem: (id) => {
+        const list = get().collectedItems;
+        if (list.includes(id)) return;
+        set({ collectedItems: [...list, id] });
+      },
+      activateAltar: (id) => {
+        const list = get().activatedAltars;
+        if (list.includes(id)) return;
+        set({ activatedAltars: [...list, id] });
+      },
       reset: () =>
         set({
           hearts: 3,
@@ -61,6 +91,8 @@ export const useGame = create<GameState>()(
           xpToNext: 10,
           hasKey: false,
           bobbleVanished: false,
+          collectedItems: [],
+          activatedAltars: [],
         }),
     }),
     {
@@ -75,6 +107,8 @@ export const useGame = create<GameState>()(
         xpToNext: s.xpToNext,
         hasKey: s.hasKey,
         bobbleVanished: s.bobbleVanished,
+        collectedItems: s.collectedItems,
+        activatedAltars: s.activatedAltars,
       }),
       // v1 → v2: forward-port everything, default the new bobbleVanished
       // flag to false so existing saves still trigger Bobble's lead.

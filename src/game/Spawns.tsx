@@ -15,6 +15,8 @@ import Car from './Car';
 import CarPortal from './CarPortal';
 import Remnant from './Remnant';
 import StaticGLB from './StaticGLB';
+import Crystal from './Crystal';
+import CrystalAltar from './CrystalAltar';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -158,6 +160,26 @@ export default function Spawns({ playerPosRef }: Props) {
                 id={s.id}
                 kindName={s.kind}
                 position={[s.position[0], 0, s.position[1]]}
+                scale={s.scale}
+                rotationY={s.rotation}
+              />
+            );
+          case 'crystal':
+            return (
+              <Crystal
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                playerPosRef={playerPosRef}
+              />
+            );
+          case 'crystal_altar':
+            return (
+              <CrystalAltar
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                playerPosRef={playerPosRef}
                 scale={s.scale}
                 rotationY={s.rotation}
               />

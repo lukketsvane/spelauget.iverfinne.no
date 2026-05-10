@@ -126,6 +126,26 @@ export type ScenerySpawn = {
   rotation?: number;
 };
 
+// Floating crystal pickup — proximity-based collection, walks
+// straight into useGame.crystals + records the spawn id in
+// useGame.collectedItems so it stays gone on revisit.
+export type CrystalSpawn = {
+  kind: 'crystal';
+  id: string;
+  position: [number, number];
+};
+
+// Cairn altar that consumes one crystal on bow + grants XP. Tracked
+// per spawn id in useGame.activatedAltars, so each altar is a
+// one-shot reward in the world rather than a re-runnable +XP loop.
+export type CrystalAltarSpawn = {
+  kind: 'crystal_altar';
+  id: string;
+  position: [number, number];
+  scale?: number;
+  rotation?: number;
+};
+
 export type Spawn =
   | StarNpcSpawn
   | BobleNpcSpawn
@@ -137,7 +157,9 @@ export type Spawn =
   | CarSpawn
   | CarPortalSpawn
   | RemnantSpawn
-  | ScenerySpawn;
+  | ScenerySpawn
+  | CrystalSpawn
+  | CrystalAltarSpawn;
 
 export type LevelDefinition = {
   id: LevelId;
@@ -605,6 +627,29 @@ const BASE_SPAWNS: Spawn[] = [
       { kind: 'rock_stack', id: 'rem.rock.east', position: [32, 46], scale: 0.95, rotation: 0.7 },
       { kind: 'rock_stack', id: 'rem.rock.west', position: [-32, 46], scale: 0.85, rotation: -0.5 },
       { kind: 'rock_stack', id: 'rem.rock.north', position: [4, 32], scale: 0.8, rotation: 0.3 },
+
+      // ===================================================================
+      // === CRYSTALS — three pickups + one altar that consumes them ======
+      // ===================================================================
+      // Three floating crystals scattered across the three regions
+      // (one per zone) so the player has to roam a bit to find them
+      // all. Each pickup walks straight into useGame.crystals; the
+      // HUD's crystal slot pops once the count goes above zero.
+      { kind: 'crystal', id: 'crystal.lys.nw', position: [-32, -8] },
+      { kind: 'crystal', id: 'crystal.stj.east', position: [40, 22] },
+      { kind: 'crystal', id: 'crystal.rem.south', position: [10, 48] },
+
+      // Altar in Lysningen, near the digger but far enough that
+      // the player only finds it after looping back from another
+      // zone with a crystal in hand. Bowing here consumes one
+      // crystal and grants +25 XP. One-shot per altar: the
+      // floating crystal on top vanishes after activation.
+      {
+        kind: 'crystal_altar',
+        id: 'altar.lys.center',
+        position: [12, -4],
+        scale: 1.6,
+      },
 ];
 
 export const LEVELS: Record<LevelId, LevelDefinition> = {
