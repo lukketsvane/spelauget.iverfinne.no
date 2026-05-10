@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { useDialogue } from '@/store/dialogue';
 import { useEmote } from '@/store/emote';
 import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
@@ -83,13 +84,16 @@ export default function CarPortal({
     else useInteraction.getState().release(id);
   });
 
-  // Bow trigger: teleport once unlocked + in range.
+  // Bow trigger: teleport once unlocked + in range. Skipped while a
+  // dialogue is on-screen so a stray bow during conversation doesn't
+  // yank the player out of the world.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
       if (!isUnlocked(gate)) return;
+      if (useDialogue.getState().active) return;
       if (useLevel.getState().transitionPhase !== 'idle') return;
       const g = groupRef.current;
       if (!g) return;

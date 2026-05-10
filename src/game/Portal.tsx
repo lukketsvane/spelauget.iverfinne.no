@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useDialogue } from '@/store/dialogue';
 import { useEmote } from '@/store/emote';
 import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
@@ -138,6 +139,8 @@ export default function Portal({
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
       if (!useGame.getState().hasKey) return;
+      // Don't yank the player out of an active conversation.
+      if (useDialogue.getState().active) return;
       // Already mid-travel? Don't queue a second one.
       if (useLevel.getState().transitionPhase !== 'idle') return;
       const g = groupRef.current;

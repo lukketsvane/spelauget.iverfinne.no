@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { findPlayerSpawn, LEVELS } from '@/game/levels';
 import { getRegion, regionAt, REGIONS, type RegionId } from '@/game/regions';
+import { useDialogue } from '@/store/dialogue';
 import { useInput } from '@/store/input';
 import { useToast } from '@/store/toast';
 
@@ -72,6 +73,10 @@ export const useLevel = create<LevelState>()(
         const input = useInput.getState();
         input.setMove(0, 0);
         input.clearDestination();
+        // Close any active dialogue — a conversation in the old
+        // region doesn't make sense once the world fades back in
+        // somewhere else.
+        if (useDialogue.getState().active) useDialogue.getState().close();
 
         set({ transitionPhase: 'out' });
         setTimeout(() => {

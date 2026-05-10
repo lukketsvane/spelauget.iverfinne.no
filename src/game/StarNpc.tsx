@@ -74,12 +74,15 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
   }, [digClipName, actions]);
 
   // Bow trigger: open the inline dialogue when the player emotes within
-  // range. Animation is unaffected — the NPC keeps digging.
+  // range. Animation is unaffected — the NPC keeps digging. Skipped
+  // while a dialogue is already on-screen (any speaker) so a second
+  // bow mid-conversation doesn't restart from line 1.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
+      if (useDialogue.getState().active) return;
       const g = group.current;
       if (!g) return;
       const dx = playerPosRef.current.x - g.position.x;

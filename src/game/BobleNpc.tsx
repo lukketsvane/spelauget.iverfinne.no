@@ -194,12 +194,15 @@ export default function BobleNpc({
     return () => mixer.removeEventListener('finished', onFinished as never);
   }, [clips, mixer]);
 
-  // Bow trigger: open dialogue and switch to gesture cycle.
+  // Bow trigger: open dialogue and switch to gesture cycle. Skipped
+  // while a dialogue is already on-screen so a second bow doesn't
+  // restart the conversation from line 1.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
+      if (useDialogue.getState().active) return;
       const g = group.current;
       if (!g) return;
       const dx = playerPosRef.current.x - g.position.x;
