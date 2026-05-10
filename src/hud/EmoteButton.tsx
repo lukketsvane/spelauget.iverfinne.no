@@ -20,7 +20,7 @@ export default function EmoteButton() {
           e.stopPropagation();
           request();
         }}
-        className="pointer-events-auto absolute bottom-6 right-6 flex flex-col items-center gap-1 transition active:scale-95"
+        className="pointer-events-auto absolute bottom-6 right-6 transition active:scale-95"
         aria-label="Click to interact"
       >
         {/* Inward 2.25-turn Archimedean-ish spiral. Each elliptical-arc
@@ -36,9 +36,6 @@ export default function EmoteButton() {
             strokeLinejoin="round"
           />
         </svg>
-        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-pink-200">
-          Click to interact
-        </span>
       </button>
     </div>
   );

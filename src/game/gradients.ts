@@ -1,127 +1,158 @@
 import * as THREE from 'three';
+import {
+  REGION_COUNT,
+  regionCenters,
+  regionSigmas,
+  type PaletteRole,
+} from './regions';
 
 // Photoshop-style gradient map: each stop is [position 0..1, hex color].
+// Kept as a top-level type so spawn definitions and palette tables can
+// share it. The actual gradient → colour conversion lives in
+// regions.ts now (see makeRegionGradientTexture).
 export type Stop = [number, string];
 
-// Build a 1D RGBA texture by interpolating between stops. Gets sampled in
-// shaders with vec2(luminance, 0.5) to remap a grayscale value to a colour.
-export function makeGradientTexture(stops: Stop[], width = 256): THREE.DataTexture {
-  const sorted = [...stops].sort((a, b) => a[0] - b[0]);
-  const data = new Uint8Array(width * 4);
-  const tmpA = new THREE.Color();
-  const tmpB = new THREE.Color();
+// Mega-map gradient system. Every gradient-mapped surface (ground,
+// plants, halo, relic) samples a single 2D RGBA texture indexed by
+// (luminance, regionV). `regionV` is computed per-pixel from the
+// world XZ position via a softmax over Gaussians at each region
+// centre — so the world's tint blends organically as the player walks
+// from one region into another, no scene swaps required.
+//
+// Day/night still drives a separate hue-rotation + brightness uniform
+// pair shared across every patched material.
 
-  for (let i = 0; i < width; i++) {
-    const t = i / (width - 1);
-    let r = 0;
-    let g = 0;
-    let b = 0;
+export type GradientRole = PaletteRole;
 
-    if (t <= sorted[0][0]) {
-      tmpA.set(sorted[0][1]);
-      r = tmpA.r;
-      g = tmpA.g;
-      b = tmpA.b;
-    } else if (t >= sorted[sorted.length - 1][0]) {
-      tmpA.set(sorted[sorted.length - 1][1]);
-      r = tmpA.r;
-      g = tmpA.g;
-      b = tmpA.b;
-    } else {
-      for (let s = 0; s < sorted.length - 1; s++) {
-        const [t0, c0] = sorted[s];
-        const [t1, c1] = sorted[s + 1];
-        if (t >= t0 && t <= t1) {
-          const u = (t - t0) / (t1 - t0);
-          tmpA.set(c0);
-          tmpB.set(c1);
-          r = tmpA.r + (tmpB.r - tmpA.r) * u;
-          g = tmpA.g + (tmpB.g - tmpA.g) * u;
-          b = tmpA.b + (tmpB.b - tmpA.b) * u;
-          break;
-        }
-      }
-    }
-
-    data[i * 4 + 0] = Math.round(r * 255);
-    data[i * 4 + 1] = Math.round(g * 255);
-    data[i * 4 + 2] = Math.round(b * 255);
-    data[i * 4 + 3] = 255;
-  }
-
-  const tex = new THREE.DataTexture(data, width, 1, THREE.RGBAFormat);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.ClampToEdgeWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-// All gradient-mapped materials register their uniforms here so we can
-// drive day/night and per-level palette swaps for every surface at
-// once. `role` tags ground vs plant vs plant-halo vs relic so the level
-// transition can swap them independently.
-export type GradientRole = 'ground' | 'plant' | 'plant_halo' | 'relic';
-
-type GradientUniforms = {
+type SharedUniforms = {
   uHueAngle: { value: number };
   uBrightness: { value: number };
-  gradientMap: { value: THREE.Texture };
-  role: GradientRole;
 };
-const REGISTRY: GradientUniforms[] = [];
+const shared: SharedUniforms = {
+  uHueAngle: { value: 0 },
+  uBrightness: { value: 1 },
+};
 
 export function updateGradientUniforms(hueAngle: number, brightness: number) {
-  for (const u of REGISTRY) {
-    u.uHueAngle.value = hueAngle;
-    u.uBrightness.value = brightness;
-  }
+  shared.uHueAngle.value = hueAngle;
+  shared.uBrightness.value = brightness;
 }
 
-// Swap the gradient texture used by every material registered under
-// the given role. Used on level transition to re-skin the world without
-// recompiling shaders.
+// Each per-role gradient texture is built once at app start and
+// referenced by every patched material. Live-swap via setGradientTexture
+// during the play session lets us hot-replace palettes from the
+// console while iterating.
+const roleTextures: Partial<Record<GradientRole, THREE.Texture>> = {};
+const roleUniforms: Partial<Record<GradientRole, { value: THREE.Texture }>[]> = {};
+
+// Material registries by role so `setGradientTexture(role, tex)` can
+// re-point every patched material's `gradientMap` uniform at once.
+const materialUniformsByRole: Record<GradientRole, { value: THREE.Texture }[]> = {
+  ground: [],
+  plant: [],
+  halo: [],
+  relic: [],
+};
+
 export function setGradientTexture(role: GradientRole, texture: THREE.Texture) {
-  for (const u of REGISTRY) {
-    if (u.role === role) u.gradientMap.value = texture;
-  }
+  roleTextures[role] = texture;
+  for (const u of materialUniformsByRole[role]) u.value = texture;
 }
 
-// Patches a material's <map_fragment> shader chunk to remap the sampled
-// texture's luminance through a 1D gradient texture, then rotates the
-// hue and scales the brightness based on shared day-cycle uniforms.
-// Works for any material that includes the standard map_fragment chunk
-// (Lambert, Basic, Standard, Phong).
+export function getGradientTexture(role: GradientRole): THREE.Texture | undefined {
+  return roleTextures[role];
+}
+
+// Patches a material's <map_fragment> shader chunk with:
+//   1. Region-blend lookup: per-pixel softmax over Gaussians at each
+//      region centre → regionV ∈ [0, 1]. Sampled together with
+//      luminance against the 2D gradient texture for that role.
+//   2. Day-cycle hue rotation + brightness scale on the resulting
+//      colour, driven by the shared uniforms above.
+//
+// Works on any material that includes the standard `<map_fragment>`
+// chunk (Lambert / Basic / Standard / Phong).
 export function applyGradientMap(
   material: THREE.Material,
-  gradient: THREE.Texture,
+  initialGradient: THREE.Texture,
   role: GradientRole,
 ) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.gradientMap = { value: gradient };
-    shader.uniforms.uHueAngle = { value: 0 };
-    shader.uniforms.uBrightness = { value: 1 };
-    REGISTRY.push({
-      uHueAngle: shader.uniforms.uHueAngle,
-      uBrightness: shader.uniforms.uBrightness,
-      gradientMap: shader.uniforms.gradientMap,
-      role,
-    });
+  const prev = material.onBeforeCompile;
+  material.onBeforeCompile = (shader, renderer) => {
+    prev?.call(material, shader, renderer);
 
+    shader.uniforms.gradientMap = { value: initialGradient };
+    shader.uniforms.uHueAngle = shared.uHueAngle;
+    shader.uniforms.uBrightness = shared.uBrightness;
+    shader.uniforms.uRegionCenters = { value: regionCenters() };
+    shader.uniforms.uRegionSigmas = { value: regionSigmas() };
+
+    // Track the gradientMap uniform so setGradientTexture can swap it.
+    materialUniformsByRole[role].push(shader.uniforms.gradientMap as { value: THREE.Texture });
+
+    // -- Inject world position into the fragment stage. --
+    // Three.js doesn't pass world position to fragment by default, so
+    // we add a varying in the vertex shader and feed it from the
+    // begin_vertex chunk's `transformed` (post-skinning local space)
+    // multiplied by modelMatrix.
+    shader.vertexShader =
+      /* glsl */ `
+        varying vec3 vGradientWorldPos;
+      ` + shader.vertexShader;
+
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <project_vertex>',
+      /* glsl */ `
+        vGradientWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        #include <project_vertex>
+      `,
+    );
+
+    // -- Fragment patch. --
     shader.fragmentShader =
       /* glsl */ `
+      varying vec3 vGradientWorldPos;
       uniform sampler2D gradientMap;
       uniform float uHueAngle;
       uniform float uBrightness;
+      uniform vec2 uRegionCenters[${REGION_COUNT}];
+      uniform float uRegionSigmas[${REGION_COUNT}];
 
-      // Rodrigues rotation around the (1,1,1)/√3 axis — hue rotation on
-      // RGB that preserves luminance.
+      // Rodrigues rotation around the (1,1,1)/√3 axis — hue rotation
+      // on RGB that preserves luminance.
       vec3 hueShift(vec3 col, float angle) {
         const vec3 k = vec3(0.57735026, 0.57735026, 0.57735026);
         float c = cos(angle);
         return col * c + cross(k, col) * sin(angle) + k * dot(k, col) * (1.0 - c);
+      }
+
+      // Per-pixel weighted region row in [0, 1]. Each region gets a
+      // Gaussian weight from its centre + sigma; the result is a
+      // softmax over those weights mapped to the gradient texture's
+      // V axis. With ${REGION_COUNT} rows and linear filtering, the
+      // returned colour is the smooth weighted average of region
+      // palettes at this pixel's world position.
+      float gradientRegionV() {
+        float weights[${REGION_COUNT}];
+        float maxW = -1e9;
+        for (int i = 0; i < ${REGION_COUNT}; i++) {
+          vec2 d = vGradientWorldPos.xz - uRegionCenters[i];
+          float dSq = dot(d, d);
+          weights[i] = -dSq / max(1.0, uRegionSigmas[i] * uRegionSigmas[i]);
+          maxW = max(maxW, weights[i]);
+        }
+        // Softmax: subtract max for stability, exp, normalise.
+        float sum = 0.0;
+        float vAccum = 0.0;
+        for (int i = 0; i < ${REGION_COUNT}; i++) {
+          float e = exp(weights[i] - maxW);
+          sum += e;
+          // Region row → centre of its V band, so a pure-region
+          // pixel hits the row exactly.
+          float rowV = (float(i) + 0.5) / float(${REGION_COUNT});
+          vAccum += e * rowV;
+        }
+        return vAccum / max(sum, 1e-6);
       }
     ` + shader.fragmentShader;
 
@@ -131,7 +162,8 @@ export function applyGradientMap(
         #ifdef USE_MAP
           vec4 sampledColor = texture2D( map, vMapUv );
           float gradLum = dot( sampledColor.rgb, vec3(0.299, 0.587, 0.114) );
-          vec3 graded = texture2D( gradientMap, vec2(gradLum, 0.5) ).rgb;
+          float regionV = gradientRegionV();
+          vec3 graded = texture2D( gradientMap, vec2(gradLum, regionV) ).rgb;
           graded = hueShift(graded, uHueAngle);
           graded *= uBrightness;
           sampledColor.rgb = graded;
@@ -143,4 +175,3 @@ export function applyGradientMap(
   // Force recompilation if material was already used.
   material.needsUpdate = true;
 }
-

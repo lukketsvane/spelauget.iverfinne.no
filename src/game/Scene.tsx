@@ -14,9 +14,9 @@ import ExposureSync from './ExposureSync';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
-import { makeGradientTexture, setGradientTexture, updateGradientUniforms } from './gradients';
+import { setGradientTexture, updateGradientUniforms } from './gradients';
 import { LEVELS } from './levels';
-import { useLevel } from '@/store/level';
+import { makeRegionGradientTexture } from './regions';
 
 const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 
@@ -76,19 +76,12 @@ export default function Scene() {
     setCamera(cam);
   }, [size.width, size.height, setCamera]);
 
-  // Swap gradient textures whenever the level changes. Subscribing
-  // imperatively avoids React state for the gradient (uniform writes
-  // are GPU-only side effects). Initial mount also runs once so the
-  // active palette is applied even on first render.
-  const currentLevelId = useLevel((s) => s.currentLevelId);
-
   // No-plant bubbles around every NPC / prop so the digging character,
   // huts, rocks, etc. always have a clean ring of bare ground around
-  // them. Recomputed when the level changes; Plants.tsx clears its
-  // chunk cache on this change.
+  // them. The world's spawn list is constant for a session so this
+  // is computed once.
   const plantExclusions = useMemo(() => {
-    const def = LEVELS[currentLevelId];
-    return def.spawns
+    return LEVELS.world.spawns
       .filter(
         (s) =>
           s.kind === 'star_npc' ||
@@ -97,8 +90,16 @@ export default function Scene() {
           s.kind === 'rock_stack' ||
           s.kind === 'trilo' ||
           s.kind === 'relic' ||
+          s.kind === 'remnant' ||
           s.kind === 'car' ||
-          s.kind === 'portal',
+          s.kind === 'car_portal' ||
+          s.kind === 'portal' ||
+          s.kind === 'glowing_purple_coral' ||
+          s.kind === 'neon_vascular_tree' ||
+          s.kind === 'purple_coral' ||
+          s.kind === 'purple_coral_alt' ||
+          s.kind === 'purple_stone_cairn' ||
+          s.kind === 'tangled_root_sculpture',
       )
       .map((s) => {
         // Rough per-kind clearance radius. Big NPCs get the widest ring.
@@ -109,25 +110,28 @@ export default function Scene() {
               ? 5
               : s.kind === 'stone_hut'
                 ? 7
-                : s.kind === 'car'
+                : s.kind === 'car' || s.kind === 'car_portal'
                   ? 4.5
                   : s.kind === 'portal'
                     ? 4
-                    : s.kind === 'relic'
+                    : s.kind === 'relic' || s.kind === 'remnant'
                       ? 2.5
-                      : 3.5;
+                      : 3;
         return { x: s.position[0], z: s.position[1], r };
       });
-  }, [currentLevelId]);
+  }, []);
+  // Build the four region-blended 2D gradient textures once at mount;
+  // every gradient-mapped surface samples them via the registry. The
+  // textures are immutable for the lifetime of the world (palettes
+  // are baked at build time).
   useEffect(() => {
-    const def = LEVELS[currentLevelId];
-    const g = makeGradientTexture(def.groundGradient);
-    const p = makeGradientTexture(def.plantGradient);
-    const h = makeGradientTexture(def.plantHaloGradient);
-    const r = makeGradientTexture(def.relicGradient);
+    const g = makeRegionGradientTexture('ground');
+    const p = makeRegionGradientTexture('plant');
+    const h = makeRegionGradientTexture('halo');
+    const r = makeRegionGradientTexture('relic');
     setGradientTexture('ground', g);
     setGradientTexture('plant', p);
-    setGradientTexture('plant_halo', h);
+    setGradientTexture('halo', h);
     setGradientTexture('relic', r);
     return () => {
       g.dispose();
@@ -135,7 +139,7 @@ export default function Scene() {
       h.dispose();
       r.dispose();
     };
-  }, [currentLevelId]);
+  }, []);
 
   useFrame(() => {
     target.current.lerp(characterPos.current, CAMERA.followLerp);

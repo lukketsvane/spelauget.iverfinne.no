@@ -6,6 +6,7 @@ import { useGame } from '@/store/game';
 import { useLevel } from '@/store/level';
 import { useMenu } from '@/store/menu';
 import { useSettings } from '@/store/settings';
+import { getRegion, type RegionId } from '@/game/regions';
 
 // Splash menu shown before the game canvas takes focus, and as a
 // pause overlay when the player taps the menu button mid-game.
@@ -21,6 +22,8 @@ export default function MainMenu() {
   const closeSettings = useMenu((s) => s.closeSettings);
   const showSettings = useMenu((s) => s.showSettings);
   const hasStartedGame = useMenu((s) => s.hasStartedGame);
+  const discoveredWaypoints = useLevel((s) => s.discoveredWaypoints);
+  const currentRegionId = useLevel((s) => s.currentRegionId);
 
   const [hasSave, setHasSave] = useState(false);
   useEffect(() => {
@@ -32,6 +35,16 @@ export default function MainMenu() {
     useLevel.getState().reset();
     useGame.getState().reset();
     startNewGame();
+  };
+
+  // Fast-travel buttons: offered once the player has discovered any
+  // region other than the one they're standing in. Tapping triggers
+  // the cinematic fade-relocate-fade and resumes the game in one
+  // step.
+  const travelTargets = discoveredWaypoints.filter((id) => id !== currentRegionId);
+  const handleTravel = (id: RegionId) => {
+    useLevel.getState().travel(id);
+    startGame();
   };
 
   const handleErase = () => {
@@ -72,7 +85,27 @@ export default function MainMenu() {
             {/* Continue first when a save exists — that's the most
                 common returning-player action. */}
             {hasSave && <TextButton onClick={startGame}>Continue</TextButton>}
-            <TextButton onClick={handleNewGame}>New Game</TextButton>
+            {/* Travel: jump to any previously-discovered level. Hidden
+                until the player has reached at least one other world
+                (so a fresh New Game splash doesn't show a single
+                redundant button). */}
+            {travelTargets.length > 0 && (
+              <>
+                <SectionLabel>Travel</SectionLabel>
+                {travelTargets.map((id) => (
+                  <TextButton key={id} onClick={() => handleTravel(id)}>
+                    {getRegion(id).name}
+                  </TextButton>
+                ))}
+              </>
+            )}
+            {/* New Game is destructive (wipes progress) — restrict it
+                to the splash screen so the player can't fat-finger it
+                from the in-game pause overlay. They can still wipe via
+                Settings → Erase Save if they really mean it. */}
+            {!hasStartedGame && (
+              <TextButton onClick={handleNewGame}>New Game</TextButton>
+            )}
             <TextButton onClick={openSettings}>Settings</TextButton>
           </>
         ) : (
@@ -128,7 +161,8 @@ function ControlsLegend() {
   const rows: [string, string][] = [
     ['Move', 'WASD / Arrows / Hold mouse'],
     ['Bow', 'E or Space'],
-    ['Menu', 'M or Esc'],
+    ['Menu', 'Q or Esc'],
+    ['Map', 'M'],
   ];
   return (
     <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3">
@@ -213,5 +247,15 @@ function TextButton({
     >
       {children}
     </button>
+  );
+}
+
+// Small uppercase divider used to separate Travel destinations from
+// the Continue / New Game / Settings buttons.
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-1 text-center text-[10px] font-bold uppercase tracking-[0.32em] text-pink-200/80">
+      {children}
+    </div>
   );
 }

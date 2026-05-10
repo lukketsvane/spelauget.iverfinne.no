@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { VoiceId } from '@/audio/voiceProfiles';
 
 export type DialogueLine = {
   speaker?: string;
@@ -15,7 +16,11 @@ type DialogueState = {
   // requestId increments on each line change so the typewriter UI can
   // restart its effect even when the same line is re-shown.
   requestId: number;
-  start: (lines: DialogueLine[]) => void;
+  // Optional voice profile for the current conversation. The dialogue
+  // host fires one grunt per line reveal using this id (TotK-style).
+  // null when nobody's speaking or the speaker is silent.
+  voice: VoiceId | null;
+  start: (lines: DialogueLine[], voice?: VoiceId) => void;
   next: () => void;
   close: () => void;
 };
@@ -25,19 +30,22 @@ export const useDialogue = create<DialogueState>((set) => ({
   lines: [],
   index: 0,
   requestId: 0,
-  start: (lines) =>
+  voice: null,
+  start: (lines, voice) =>
     set((s) => ({
       active: true,
       lines,
       index: 0,
       requestId: s.requestId + 1,
+      voice: voice ?? null,
     })),
   next: () =>
     set((s) => {
       if (s.index >= s.lines.length - 1) {
-        return { active: false, requestId: s.requestId + 1 };
+        return { active: false, requestId: s.requestId + 1, voice: null };
       }
       return { index: s.index + 1, requestId: s.requestId + 1 };
     }),
-  close: () => set((s) => ({ active: false, requestId: s.requestId + 1 })),
+  close: () =>
+    set((s) => ({ active: false, requestId: s.requestId + 1, voice: null })),
 }));

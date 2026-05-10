@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { speak } from '@/audio/speak';
 import { useDialogue } from '@/store/dialogue';
 
 const TYPE_INTERVAL_MS = 28;
@@ -15,18 +16,32 @@ export default function Dialogue() {
   const fullRef = useRef('');
 
   // Typewriter: re-runs whenever the requestId changes (line advance).
+  // Each character tick also fires speak(voice) for animalese-style
+  // continuous babble. The voice profile's cooldown throttles those
+  // calls down to a natural cadence (~10-13 grunts/sec). Stage
+  // directions (action lines) don't get voiced — they read as italic
+  // narration, not speech.
   useEffect(() => {
     if (!active) {
       setShown('');
       return;
     }
-    const full = lines[index]?.text ?? '';
+    const line = lines[index];
+    const full = line?.text ?? '';
     fullRef.current = full;
     setShown('');
+    const voice = useDialogue.getState().voice;
+    const shouldBabble = voice && voice !== 'player' && !line?.action;
     let i = 0;
     const interval = window.setInterval(() => {
       i += 1;
       setShown(full.slice(0, i));
+      if (shouldBabble) {
+        // Skip whitespace — grunts on spaces feel like hiccups. The
+        // cooldown handles overall pacing.
+        const ch = full.charAt(i - 1);
+        if (ch && !/\s/.test(ch)) speak(voice);
+      }
       if (i >= full.length) window.clearInterval(interval);
     }, TYPE_INTERVAL_MS);
     return () => window.clearInterval(interval);

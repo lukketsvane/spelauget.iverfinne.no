@@ -3,17 +3,18 @@
 import { useEffect, useRef } from 'react';
 import { useAudio } from '@/store/audio';
 import { useLevel } from '@/store/level';
-import type { LevelId } from './levels';
+import type { RegionId } from './regions';
 
-// Per-level playlists. The two halves of the original score were split
-// roughly by mood: the first two tracks lean toward the warmer
-// magenta-Lysningen vibe; the last two toward the cooler Stjerneengen
-// teal palette. The currently-playing track always finishes — only the
-// NEXT track is picked from the active level's pool, so level changes
-// cross-mood gradually rather than cutting mid-bar.
-const PLAYLISTS: Record<LevelId, string[]> = {
-  level1: ['/sounds/ost_01.mp3', '/sounds/ost_02.mp3'],
-  level2: ['/sounds/ost_03.mp3', '/sounds/ost_04.mp3'],
+// Per-region playlists. Tracks were split roughly by mood: the first
+// two lean toward the warmer magenta-Lysningen vibe, the last two
+// toward the cooler Stjerneengen / Remnants palettes. The currently
+// playing track always finishes — only the NEXT track is picked from
+// the active region's pool, so region transitions cross-mood
+// gradually rather than cutting mid-bar.
+const PLAYLISTS: Record<RegionId, string[]> = {
+  lysningen: ['/sounds/ost_01.mp3', '/sounds/ost_02.mp3'],
+  stjerneengen: ['/sounds/ost_03.mp3', '/sounds/ost_04.mp3'],
+  remnants: ['/sounds/ost_04.mp3', '/sounds/ost_03.mp3'],
 };
 const FADE_MS = 4000;
 
@@ -38,20 +39,21 @@ export default function BackgroundMusic() {
 
     // --- Track queue ---------------------------------------------------
     let queue: string[] = [];
-    let queueLevel: LevelId | null = null;
+    let queueRegion: RegionId | null = null;
     const refillQueue = () => {
-      const level = useLevel.getState().currentLevelId;
-      queue = [...PLAYLISTS[level]].sort(() => Math.random() - 0.5);
-      queueLevel = level;
+      const region = useLevel.getState().currentRegionId;
+      queue = [...PLAYLISTS[region]].sort(() => Math.random() - 0.5);
+      queueRegion = region;
     };
     // Picks the next track and kicks off play(). Returns the play
     // promise so the caller can hook fade-in / autoplay-fallback off
     // the first attempt's resolution.
     const nextTrack = (): Promise<void> | null => {
-      const currentLevel = useLevel.getState().currentLevelId;
-      // Stale queue (level changed mid-track) → toss it and refill from
-      // the new level's pool. Each post-transition track stays on-mood.
-      if (queue.length === 0 || queueLevel !== currentLevel) refillQueue();
+      const currentRegion = useLevel.getState().currentRegionId;
+      // Stale queue (region changed mid-track) → toss it and refill
+      // from the new region's pool. Each post-transition track stays
+      // on-mood.
+      if (queue.length === 0 || queueRegion !== currentRegion) refillQueue();
       const src = queue.shift();
       if (!src) return null;
       audio.src = src;

@@ -9,6 +9,7 @@ import { useEmote } from '@/store/emote';
 import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
 import { useToast } from '@/store/toast';
+import DiggerBeacon from './DiggerBeacon';
 
 const URL = '/models/stjernekarakter.glb';
 const TRIGGER_DISTANCE = 4.5;
@@ -85,7 +86,7 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
       const dz = playerPosRef.current.z - g.position.z;
       if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
       ourDialogue.current = true;
-      useDialogue.getState().start(dialogue);
+      useDialogue.getState().start(dialogue, 'digger');
     });
     return unsub;
   }, [playerPosRef, dialogue]);
@@ -170,11 +171,15 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
   }, [scene]);
 
   return (
-    <group ref={group} position={position}>
-      <group ref={innerGroup} scale={SCALE} position-y={footLift}>
-        <primitive object={scene} />
+    <>
+      <group ref={group} position={position}>
+        <group ref={innerGroup} scale={SCALE} position-y={footLift}>
+          <primitive object={scene} />
+        </group>
       </group>
-    </group>
+      {/* Audio breadcrumb — fades out once the player has the key. */}
+      <DiggerBeacon position={position} playerPosRef={playerPosRef} />
+    </>
   );
 }
 

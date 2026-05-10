@@ -3,9 +3,8 @@
 import { useEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { applyGradientMap, makeGradientTexture } from './gradients';
-import { LEVELS } from './levels';
-import { useLevel } from '@/store/level';
+import { applyGradientMap, getGradientTexture } from './gradients';
+import { makeRegionGradientTexture } from './regions';
 
 const GROUND_TEXTURES = ['/ny_bakke_01.png', '/ny_bakke_02.png', '/ny_bakke_03.png'];
 const GROUND_SIZE = 400;
@@ -32,10 +31,12 @@ export default function Ground() {
     }
   }, [textures]);
 
-  // Use level1's palette as the initial gradient — Scene swaps it to the
-  // active level's palette on mount + on every level change.
+  // Region-blended 2D gradient texture (luminance × region row). Built
+  // once per role at app start by Scene.tsx; we just read it from the
+  // shared registry so every gradient-mapped surface samples the same
+  // texture and any palette tweaks propagate automatically.
   const gradientTex = useMemo(
-    () => makeGradientTexture(LEVELS[useLevel.getState().currentLevelId].groundGradient),
+    () => getGradientTexture('ground') ?? makeRegionGradientTexture('ground'),
     [],
   );
 

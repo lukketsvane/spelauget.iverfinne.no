@@ -1,89 +1,90 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { findPlayerSpawn, LEVELS, type LevelId } from '@/game/levels';
+import { findPlayerSpawn, LEVELS } from '@/game/levels';
+import { getRegion, regionAt, REGIONS, type RegionId } from '@/game/regions';
 import { useInput } from '@/store/input';
 import { useToast } from '@/store/toast';
 
-// Half the total fade time. The full transition is FADE_MS * 2 — black
-// fades IN for FADE_MS, the level swaps, then black fades OUT for
-// another FADE_MS while the new level renders behind the overlay.
+// One mega-map: the level itself never changes. What used to be
+// "teleport to another level" is now "fast-travel to a region's
+// waypoint inside the same world": same cinematic fade timeline,
+// same store API surface, but the player just gets relocated.
+//
+// `currentRegionId` is recomputed from the player's world position
+// on each savePosition tick, plus once on rehydrate, so the menu's
+// Travel buttons and the day/night toast can refer to where the
+// player actually is.
+
 const FADE_MS = 1400;
+const PROXIMITY_DISCOVERY_DIST = 18; // metres
 
 type LevelState = {
-  currentLevelId: LevelId;
-  // Updated whenever the level changes — Character watches this and
-  // teleports its group to (x, 0, z).
+  // Always 'world' since the multi-level concept collapsed; kept on
+  // the store so Scene.tsx + Spawns.tsx don't have to care.
+  currentLevelId: 'world';
+  // World-space spawn point for fresh sessions / the next teleport.
+  // Updated on travel(), reset, and rehydrate (fed by savedPosition
+  // when present).
   playerSpawn: { x: number; z: number };
-  // Increments on every level change. Components subscribe to this for
-  // reset effects (NPC dialogue state, interaction claims).
+  // Bumps every time the player gets relocated. Character.tsx watches
+  // it to reset its group transform to the new spawn.
   changeCounter: number;
-  // Two-phase fade for portal teleports:
-  //   'idle' → no overlay
-  //   'out'  → black fading in (covering screen)
-  //   'in'   → black fading out (revealing new level)
+  // Two-phase fade for fast-travel: 'idle' | 'out' | 'in'.
   transitionPhase: 'idle' | 'out' | 'in';
-  // Latest player world-space position. Persisted (along with
-  // currentLevelId) so reload / Continue puts the character back
-  // exactly where they left off rather than at the level's static
-  // spawn marker. Reset on level change, New Game, and reset().
+  // Latest player world-space position. Persisted so reload / Continue
+  // puts the character back exactly where they left off rather than
+  // at the world spawn marker.
   savedPosition: { x: number; z: number } | null;
-  setLevel: (id: LevelId) => void;
-  // Cinematic teleport: fade-to-black, swap, fade-from-black.
-  teleport: (id: LevelId) => void;
-  // Hard reset to a fresh game on level1. Used by the New Game button.
+  // Region the player is currently inside (highest Gaussian weight at
+  // their position). Refreshed on each savePosition tick.
+  currentRegionId: RegionId;
+  // Set of region ids the player has visited or fast-travelled to.
+  // Populated on entry-via-proximity (savePosition) and on travel().
+  // Persisted across sessions; powers the menu's Travel list.
+  discoveredWaypoints: RegionId[];
+  // Cinematic fast-travel: fade-to-black, relocate player, fade-back.
+  travel: (target: RegionId) => void;
+  // Hard reset to a fresh game on the world spawn. Used by New Game.
   reset: () => void;
   // Throttled autosave: Character calls this every couple seconds.
   savePosition: (x: number, z: number) => void;
 };
 
-// Persisted across reloads via localStorage. We keep methods + derived
-// values out of storage and recompute them on rehydration so the store
-// is always self-consistent even after schema changes.
+function addDiscovered(list: RegionId[], id: RegionId): RegionId[] {
+  return list.includes(id) ? list : [...list, id];
+}
+
 export const useLevel = create<LevelState>()(
   persist(
     (set, get) => ({
-      currentLevelId: 'level1',
-      playerSpawn: findPlayerSpawn(LEVELS.level1),
+      currentLevelId: 'world',
+      playerSpawn: findPlayerSpawn(LEVELS.world),
       changeCounter: 0,
       transitionPhase: 'idle',
       savedPosition: null,
-      setLevel: (id) =>
-        set((s) => ({
-          currentLevelId: id,
-          playerSpawn: findPlayerSpawn(LEVELS[id]),
-          changeCounter: s.changeCounter + 1,
-          // Entering a new level → discard the saved position from the
-          // old level so the spawn marker is honoured. The next
-          // savePosition() tick will start tracking again.
-          savedPosition: null,
-        })),
-      teleport: (id) => {
-        // Already mid-transition? Ignore — second portal trigger
-        // shouldn't restart the timeline or chain swaps.
+      currentRegionId: regionAt(0, 0).id,
+      discoveredWaypoints: ['lysningen'],
+      travel: (target) => {
         if (get().transitionPhase !== 'idle') return;
 
-        // Stop any walk-in-progress so the player doesn't slide off
+        // Halt any walk-in-progress so the player doesn't slide off
         // their new spawn the instant the world reappears.
         const input = useInput.getState();
         input.setMove(0, 0);
         input.clearDestination();
 
-        // Phase 1: fade overlay from 0 → 1 (covering screen).
         set({ transitionPhase: 'out' });
         setTimeout(() => {
-          // Mid-fade: the screen is fully black, swap level invisibly.
+          const region = getRegion(target);
           set((s) => ({
-            currentLevelId: id,
-            playerSpawn: findPlayerSpawn(LEVELS[id]),
+            playerSpawn: { x: region.center[0], z: region.center[1] },
             changeCounter: s.changeCounter + 1,
             transitionPhase: 'in',
             savedPosition: null,
+            currentRegionId: region.id,
+            discoveredWaypoints: addDiscovered(s.discoveredWaypoints, region.id),
           }));
-          // Announce the new level once the player is in it. Fired at
-          // the swap point so it appears just as the fade-from-black
-          // begins — feels timed with the reveal.
-          useToast.getState().push(LEVELS[id].name);
-          // Phase 2: fade overlay from 1 → 0 (revealing new world).
+          useToast.getState().push(region.name);
           setTimeout(() => {
             set({ transitionPhase: 'idle' });
           }, FADE_MS);
@@ -91,61 +92,119 @@ export const useLevel = create<LevelState>()(
       },
       reset: () =>
         set((s) => ({
-          currentLevelId: 'level1',
-          playerSpawn: findPlayerSpawn(LEVELS.level1),
+          playerSpawn: findPlayerSpawn(LEVELS.world),
           changeCounter: s.changeCounter + 1,
           transitionPhase: 'idle',
           savedPosition: null,
+          currentRegionId: regionAt(0, 0).id,
+          discoveredWaypoints: ['lysningen'],
         })),
       savePosition: (x, z) => {
-        // Skip writes during a teleport — the position momentarily
-        // sits at the new level's spawn marker and we don't want
-        // a half-baked frame to overwrite it.
         if (get().transitionPhase !== 'idle') return;
         const cur = get().savedPosition;
-        // Skip near-identical writes so we don't burn localStorage
-        // bandwidth when the player is standing still.
-        if (cur && Math.hypot(cur.x - x, cur.z - z) < 0.05) return;
-        set({ savedPosition: { x, z } });
+        const region = regionAt(x, z);
+        const stateUpdates: Partial<LevelState> = {};
+        // Skip near-identical position writes so we don't burn
+        // localStorage bandwidth when standing still — but still let
+        // region updates propagate.
+        if (!cur || Math.hypot(cur.x - x, cur.z - z) >= 0.05) {
+          stateUpdates.savedPosition = { x, z };
+        }
+        // Region ID + discovery via proximity: the player only earns
+        // a Travel waypoint by getting reasonably close to a region
+        // centre (not just by glancing the gradient blob's edge).
+        if (region.id !== get().currentRegionId) {
+          stateUpdates.currentRegionId = region.id;
+        }
+        const dx = x - region.center[0];
+        const dz = z - region.center[1];
+        if (Math.hypot(dx, dz) < PROXIMITY_DISCOVERY_DIST) {
+          const list = get().discoveredWaypoints;
+          if (!list.includes(region.id)) {
+            stateUpdates.discoveredWaypoints = addDiscovered(list, region.id);
+            // Surface the discovery as a toast — feels like a TotK
+            // waypoint reveal.
+            useToast.getState().push(`Discovered: ${region.name}`, 'success');
+          }
+        }
+        if (Object.keys(stateUpdates).length > 0) set(stateUpdates as LevelState);
       },
     }),
     {
       name: 'spelauget.level',
-      version: 2,
+      version: 4,
       partialize: (s) => ({
-        currentLevelId: s.currentLevelId,
         savedPosition: s.savedPosition,
+        currentRegionId: s.currentRegionId,
+        discoveredWaypoints: s.discoveredWaypoints,
       }),
-      // v1 → v2: forward-port currentLevelId, default savedPosition to
-      // null so an existing save lands the player on the level marker
-      // rather than at world origin. Without a migrate, zustand drops
-      // v1 data entirely and the player loses their level on first run.
+      // v3 → v4: collapse the multi-level model into a single world.
+      // currentLevelId is dropped (always 'world' now); discoveredLevels
+      // becomes discoveredWaypoints (mapping the old level ids to
+      // their region equivalents). savedPosition carries forward
+      // verbatim, but we drop it if it would land the player far
+      // outside any region centre — old saves used per-level coords.
       migrate: (persistedState, version) => {
-        if (version < 2 && persistedState && typeof persistedState === 'object') {
-          const prev = persistedState as { currentLevelId?: LevelId };
-          return {
-            currentLevelId: prev.currentLevelId ?? 'level1',
-            savedPosition: null,
-          };
+        type Persisted = {
+          savedPosition: { x: number; z: number } | null;
+          currentRegionId: RegionId;
+          discoveredWaypoints: RegionId[];
+        };
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState as Persisted;
         }
-        return persistedState as { currentLevelId: LevelId; savedPosition: { x: number; z: number } | null };
+        if (version >= 4) return persistedState as Persisted;
+
+        const obj = persistedState as Record<string, unknown>;
+        // Old discoveredLevels used the level1/2/3 ids.
+        const oldDiscovered = (obj.discoveredLevels as string[] | undefined) ?? [
+          'level1',
+        ];
+        const map: Record<string, RegionId> = {
+          level1: 'lysningen',
+          level2: 'stjerneengen',
+          level3: 'remnants',
+        };
+        const seedSet = new Set<RegionId>(['lysningen']);
+        for (const id of oldDiscovered) {
+          const r = map[id];
+          if (r) seedSet.add(r);
+        }
+
+        // Old per-level savedPosition no longer makes sense in a
+        // shared world — drop it so the player respawns at the world
+        // origin (Lysningen's centre) on first load after the
+        // upgrade. Less surprising than landing them somewhere stale.
+        return {
+          savedPosition: null,
+          currentRegionId: 'lysningen',
+          discoveredWaypoints: [...seedSet],
+        };
       },
       onRehydrateStorage: () => (state) => {
-        // Recompute playerSpawn from the rehydrated currentLevelId so
-        // teleports go to the right marker if level data changed. If a
-        // savedPosition was persisted, use it as the spawn so Continue /
-        // reload puts the character exactly where they left off — the
-        // "exact savegame" behaviour. Falls back to the level marker
-        // when no save exists yet (first launch, fresh New Game).
         if (state) {
-          const id = state.currentLevelId;
-          if (!LEVELS[id]) {
-            state.currentLevelId = 'level1';
-            state.savedPosition = null;
-          }
-          const def = LEVELS[state.currentLevelId];
+          // Reseed playerSpawn from savedPosition if present, else use
+          // the world spawn (Lysningen centre). transitionPhase is
+          // never persisted so we always land in 'idle'.
+          const def = LEVELS.world;
           state.playerSpawn = state.savedPosition ?? findPlayerSpawn(def);
           state.transitionPhase = 'idle';
+          // Drop any discovered ids that no longer exist in the build
+          // (renamed regions).
+          const known = state.discoveredWaypoints ?? ['lysningen'];
+          const validIds = new Set<RegionId>(REGIONS.map((r) => r.id));
+          state.discoveredWaypoints = known.filter((d) => validIds.has(d));
+          if (!state.discoveredWaypoints.includes('lysningen')) {
+            state.discoveredWaypoints = ['lysningen', ...state.discoveredWaypoints];
+          }
+          // Recompute currentRegionId from the actual rehydrated
+          // position so the HUD label is right on first frame.
+          if (state.savedPosition) {
+            state.currentRegionId = regionAt(
+              state.savedPosition.x,
+              state.savedPosition.z,
+            ).id;
+          }
         }
       },
     },

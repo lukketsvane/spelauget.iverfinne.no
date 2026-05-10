@@ -6,6 +6,7 @@ import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import { useDialogue, type DialogueLine } from '@/store/dialogue';
 import { useEmote } from '@/store/emote';
+import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
 
 const URL = '/models/boblehovud.glb';
@@ -34,17 +35,49 @@ type Props = {
   position: [number, number, number];
   dialogue: DialogueLine[];
   playerPosRef: MutableRefObject<THREE.Vector3>;
+  // Optional [x, z] in world space. After dialogue, Bobble follows the
+  // player. Once both Bobble and the player are within VANISH_RADIUS
+  // of leadTo, Bobble fades out and `useGame.bobbleVanished` flips —
+  // unlocking whatever spawn is gated on that flag (a car_portal, in
+  // level 2's case).
+  leadTo?: [number, number];
 };
+
+// Distance from leadTo within which both Bobble and the player must
+// stand before Bobble vanishes. Generous so the trigger feels easy to
+// hit — the player isn't reading instructions.
+const VANISH_RADIUS = 4.5;
+// How long the vanish fade lasts before Bobble fully unmounts. Short —
+// just enough to read as "she dissolved" rather than a hard pop.
+const VANISH_DURATION_MS = 900;
 
 // Bobble — calmer NPC than StarNpc. Plays the longest clip on a loop
 // as ambient idle. While in dialogue, cycles two medium "gesture" clips
 // for a talking-head feel. After our dialogue ends, drifts after the
 // player keeping FOLLOW_DISTANCE m behind.
-export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props) {
+export default function BobleNpc({
+  id,
+  position,
+  dialogue,
+  playerPosRef,
+  leadTo,
+}: Props) {
   const group = useRef<THREE.Group>(null);
   const innerGroup = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(URL);
   const { actions, mixer } = useAnimations(animations, group);
+
+  // -- Vanish-on-arrival state ----------------------------------------
+  // `vanishStartRef` is performance.now() once the trigger fires, or 0
+  // before. `vanished` flips when the fade completes; the component
+  // returns null and the game store's bobbleVanished flag has been
+  // flipped, gating the car_portal in level 2.
+  const vanishStartRef = useRef(0);
+  const [vanished, setVanished] = useState(
+    () => useGame.getState().bobbleVanished,
+  );
+  // Snapshotted once at mount so re-mounts (e.g. level revisit) check
+  // the persisted flag without flickering through the vanish sequence.
 
   // Map clips by duration. Reading directly from `animations` so we
   // don't hit the drei lazy-init zero-duration trap.
@@ -174,7 +207,7 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
       if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
 
       ourDialogue.current = true;
-      useDialogue.getState().start(dialogue);
+      useDialogue.getState().start(dialogue, 'bobble');
 
       // Switch into talking phase: fade idle out, kick off gesture A.
       if (clips && phaseRef.current === 'idle') {
@@ -247,6 +280,58 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
         const step = Math.min(FOLLOW_SPEED * dt, dist - FOLLOW_DISTANCE);
         g.position.x += (dx / dist) * step;
         g.position.z += (dz / dist) * step;
+      }
+
+      // Lead-to arrival check: once the player AND Bobble are both
+      // close to the lead destination, kick off the vanish fade. Only
+      // fires while following (not before the player has talked) and
+      // only once per save.
+      if (
+        leadTo &&
+        vanishStartRef.current === 0 &&
+        !useGame.getState().bobbleVanished
+      ) {
+        const pdx = playerPosRef.current.x - leadTo[0];
+        const pdz = playerPosRef.current.z - leadTo[1];
+        const bdx = g.position.x - leadTo[0];
+        const bdz = g.position.z - leadTo[1];
+        if (
+          Math.hypot(pdx, pdz) < VANISH_RADIUS &&
+          Math.hypot(bdx, bdz) < VANISH_RADIUS
+        ) {
+          vanishStartRef.current = performance.now();
+          // Release any held interaction slot so the spiral button
+          // doesn't linger over a fading head.
+          useInteraction.getState().release(id);
+        }
+      }
+    }
+
+    // Drive the vanish fade once started: ramp opacity 1 → 0 across
+    // VANISH_DURATION_MS, then flip the persistent flag and unmount.
+    // Materials are flipped to transparent on the first frame of the
+    // fade so the alpha actually composites.
+    if (vanishStartRef.current > 0 && !vanished) {
+      const elapsed = performance.now() - vanishStartRef.current;
+      const t = Math.min(1, elapsed / VANISH_DURATION_MS);
+      const alpha = 1 - t;
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const mat of mats) {
+          if (!mat) continue;
+          const m = mat as THREE.Material & { opacity?: number };
+          m.transparent = true;
+          if ('opacity' in m && typeof m.opacity === 'number') m.opacity = alpha;
+          m.depthWrite = alpha > 0.5;
+          m.needsUpdate = true;
+        }
+      });
+      if (t >= 1) {
+        useGame.getState().vanishBobble();
+        setVanished(true);
+        return;
       }
     }
 
@@ -324,6 +409,12 @@ export default function BobleNpc({ id, position, dialogue, playerPosRef }: Props
       }
     });
   }, [scene]);
+
+  // Once Bobble has fully vanished (either this run, or in a previous
+  // session that's been rehydrated), don't render anything. Saves us
+  // doing animation / interaction work for a head that should no
+  // longer exist.
+  if (vanished) return null;
 
   return (
     <group ref={group} position={position}>

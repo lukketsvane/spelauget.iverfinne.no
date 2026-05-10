@@ -8,7 +8,7 @@ import { useGame } from '@/store/game';
 import { useInteraction } from '@/store/interaction';
 import { useLevel } from '@/store/level';
 import { useSettings } from '@/store/settings';
-import type { LevelId } from './levels';
+import type { RegionId } from './regions';
 
 const TRIGGER_DISTANCE = 3.6;
 
@@ -18,19 +18,20 @@ type Props = {
   radius?: number;
   colorA?: string;
   colorB?: string;
-  targetLevel: LevelId;
+  targetRegion: RegionId;
   playerPosRef: MutableRefObject<THREE.Vector3>;
 };
 
 // Vertical disc with an animated shimmer / glance shader. Bow within
-// range to teleport to `targetLevel`.
+// range to fast-travel to the target region's waypoint inside the
+// shared world.
 export default function Portal({
   id,
   position,
   radius = 2.2,
   colorA = '#ffd5e8',
   colorB = '#7a4cff',
-  targetLevel,
+  targetRegion,
   playerPosRef,
 }: Props) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
@@ -126,27 +127,28 @@ export default function Portal({
     else useInteraction.getState().release(id);
   });
 
-  // Subscribe to bow trigger; teleport only if the player has the key.
-  // teleport() runs the cinematic fade — fade-to-black, swap level
-  // mid-cover, fade-from-black — so the world transition reads as a
-  // dramatic moment rather than an instant pop.
+  // Subscribe to bow trigger; fast-travel only if the player has the
+  // key. travel() runs the cinematic fade — fade-to-black, relocate
+  // the player to the target region's centre, fade-from-black — so
+  // every waypoint hop feels like a dramatic moment rather than a
+  // teleport pop.
   useEffect(() => {
     let lastReq = useEmote.getState().requestId;
     const unsub = useEmote.subscribe((s) => {
       if (s.requestId === lastReq) return;
       lastReq = s.requestId;
       if (!useGame.getState().hasKey) return;
-      // Already mid-teleport? Don't queue a second one.
+      // Already mid-travel? Don't queue a second one.
       if (useLevel.getState().transitionPhase !== 'idle') return;
       const g = groupRef.current;
       if (!g) return;
       const dx = playerPosRef.current.x - g.position.x;
       const dz = playerPosRef.current.z - g.position.z;
       if (Math.hypot(dx, dz) >= TRIGGER_DISTANCE) return;
-      useLevel.getState().teleport(targetLevel);
+      useLevel.getState().travel(targetRegion);
     });
     return unsub;
-  }, [id, playerPosRef, targetLevel]);
+  }, [id, playerPosRef, targetRegion]);
 
   // On unmount, drop our claim so a future portal can take over.
   useEffect(() => {

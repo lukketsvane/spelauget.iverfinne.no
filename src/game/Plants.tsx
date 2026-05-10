@@ -4,9 +4,8 @@ import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'rea
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { applyGradientMap, makeGradientTexture } from './gradients';
-import { LEVELS } from './levels';
-import { useLevel } from '@/store/level';
+import { applyGradientMap, getGradientTexture } from './gradients';
+import { makeRegionGradientTexture } from './regions';
 import { useSettings } from '@/store/settings';
 
 // height = world units tall.
@@ -69,14 +68,15 @@ export default function Plants({ playerPosRef, exclusions }: Props) {
   // shared time + player position without rebinding ref hooks.
   const uniformList = useRef<PlantUniforms[]>([]);
 
-  // Initial gradient from current level — Scene's effect will swap to
-  // the active palette on mount + every level change.
+  // Region-blended gradient textures shared across the world. Built
+  // once at app start by Scene.tsx; we just read the registry so all
+  // plants sample the same blend.
   const gradientTex = useMemo(
-    () => makeGradientTexture(LEVELS[useLevel.getState().currentLevelId].plantGradient),
+    () => getGradientTexture('plant') ?? makeRegionGradientTexture('plant'),
     [],
   );
   const haloTex = useMemo(
-    () => makeGradientTexture(LEVELS[useLevel.getState().currentLevelId].plantHaloGradient),
+    () => getGradientTexture('halo') ?? makeRegionGradientTexture('halo'),
     [],
   );
 
@@ -101,7 +101,7 @@ export default function Plants({ playerPosRef, exclusions }: Props) {
         side: THREE.DoubleSide,
         toneMapped: false,
       });
-      applyGradientMap(halo, haloTex, 'plant_halo');
+      applyGradientMap(halo, haloTex, 'halo');
       // Halo gets the SAME vertex displacement so the additive layer
       // tracks the base sprite exactly while it sways.
       applyPlantVertexShader(halo, src.wind, src.pushable, uniformList);

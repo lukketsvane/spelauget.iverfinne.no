@@ -11,11 +11,16 @@ type GameState = {
   // Set when the digging NPC hands the player the key. Gates the
   // teleporter — portals stay decorative until this is true.
   hasKey: boolean;
+  // Set when the player has led Bobble to the parked car. Bobble
+  // vanishes at that point and the car becomes interactable as a
+  // gateway to The Remnants (level 3).
+  bobbleVanished: boolean;
   addCoin: () => void;
   addCrystal: () => void;
   takeDamage: () => void;
   addXp: (amount: number) => void;
   giveKey: () => void;
+  vanishBobble: () => void;
   reset: () => void;
 };
 
@@ -30,6 +35,7 @@ export const useGame = create<GameState>()(
       xp: 0,
       xpToNext: 10,
       hasKey: false,
+      bobbleVanished: false,
       addCoin: () => set({ coins: get().coins + 1 }),
       addCrystal: () => set({ crystals: get().crystals + 1 }),
       takeDamage: () => set({ hearts: Math.max(0, get().hearts - 1) }),
@@ -44,6 +50,7 @@ export const useGame = create<GameState>()(
         set({ xp, xpToNext, level });
       },
       giveKey: () => set({ hasKey: true }),
+      vanishBobble: () => set({ bobbleVanished: true }),
       reset: () =>
         set({
           hearts: 3,
@@ -53,11 +60,12 @@ export const useGame = create<GameState>()(
           xp: 0,
           xpToNext: 10,
           hasKey: false,
+          bobbleVanished: false,
         }),
     }),
     {
       name: 'spelauget.game',
-      version: 1,
+      version: 2,
       partialize: (s) => ({
         hearts: s.hearts,
         coins: s.coins,
@@ -66,7 +74,19 @@ export const useGame = create<GameState>()(
         xp: s.xp,
         xpToNext: s.xpToNext,
         hasKey: s.hasKey,
+        bobbleVanished: s.bobbleVanished,
       }),
+      // v1 → v2: forward-port everything, default the new bobbleVanished
+      // flag to false so existing saves still trigger Bobble's lead.
+      migrate: (persistedState, version) => {
+        if (version < 2 && persistedState && typeof persistedState === 'object') {
+          return {
+            ...(persistedState as Record<string, unknown>),
+            bobbleVanished: false,
+          };
+        }
+        return persistedState as Partial<GameState>;
+      },
     },
   ),
 );

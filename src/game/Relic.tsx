@@ -4,9 +4,8 @@ import { useEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { collision } from '@/store/collision';
-import { applyGradientMap, makeGradientTexture } from './gradients';
-import { LEVELS } from './levels';
-import { useLevel } from '@/store/level';
+import { applyGradientMap, getGradientTexture } from './gradients';
+import { makeRegionGradientTexture } from './regions';
 
 const FACE_CAMERA_Y = Math.PI / 4;
 // Half-depth of the relic card's collision footprint along the local
@@ -58,9 +57,8 @@ export default function Relic({ id, position, texture, height = 4.5, scale = 1 }
       side: THREE.DoubleSide,
       toneMapped: false,
     });
-    const initialGradient = makeGradientTexture(
-      LEVELS[useLevel.getState().currentLevelId].relicGradient,
-    );
+    const initialGradient =
+      getGradientTexture('relic') ?? makeRegionGradientTexture('relic');
     applyGradientMap(m, initialGradient, 'relic');
     return m;
     // tex is the only meaningful dependency — gradient is patched into the

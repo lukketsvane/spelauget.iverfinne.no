@@ -1,7 +1,7 @@
 // Stale-while-revalidate service worker. The shell + heavy assets are
 // pre-cached on install so the game can launch fully offline once visited
 // at least once. Bump CACHE_VERSION when the asset list changes.
-const CACHE_VERSION = 'spelauget-v17';
+const CACHE_VERSION = 'spelauget-v21';
 
 const PRECACHE = [
   '/',
@@ -13,6 +13,7 @@ const PRECACHE = [
   '/sounds/ost_03.mp3',
   '/sounds/ost_04.mp3',
   '/menu/menu_screen.png',
+  '/map/map.png',
   '/menu/key_01.png',
   '/menu/key_02.png',
   '/menu/coin.png',
@@ -25,6 +26,12 @@ const PRECACHE = [
   '/models/rock_stack.glb',
   '/models/trilo.glb',
   '/models/car_01.glb',
+  '/models/glowing_purple_coral.glb',
+  '/models/neon_vascular_tree.glb',
+  '/models/purple_coral.glb',
+  '/models/purple_coral_alt.glb',
+  '/models/purple_stone_cairn.glb',
+  '/models/tangled_root_sculpture.glb',
   '/plante_01.png',
   '/plante_02.png',
   '/plante_03.png',
@@ -37,6 +44,15 @@ const PRECACHE = [
   '/relic2 1.png',
   '/relic3 1.png',
   '/relic4 1.png',
+  '/underbrush.png',
+  '/remnants/remnant_01.png',
+  '/remnants/remnant_02.png',
+  '/remnants/remnant_03.png',
+  '/remnants/remnant_04.png',
+  '/remnants/remnant_05.png',
+  '/remnants/remnant_06.png',
+  '/remnants/remnant_07.png',
+  '/remnants/remnant_08.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -74,6 +90,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.glb') ||
     url.pathname.endsWith('.mp3') ||
+    url.pathname.endsWith('.ogg') ||
     url.pathname === '/manifest.json';
 
   if (isStatic) {

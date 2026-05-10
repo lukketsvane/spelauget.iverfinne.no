@@ -15,6 +15,8 @@ import TeleportOverlay from '@/hud/TeleportOverlay';
 import MenuHotkey from '@/hud/MenuHotkey';
 import FpsOverlay from '@/hud/FpsOverlay';
 import ToastHost from '@/hud/ToastHost';
+import VoiceHost from '@/hud/VoiceHost';
+import MapOverlay from '@/hud/MapOverlay';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 import BackgroundMusic from './BackgroundMusic';
@@ -67,11 +69,13 @@ export default function Game() {
 
       {!inGame && <MainMenu />}
 
+      <MapOverlay />
       <BlackOverlay />
       <TeleportOverlay />
       <MenuHotkey />
       <FpsOverlay />
       <BackgroundMusic />
+      <VoiceHost />
       <ServiceWorker />
     </>
   );
