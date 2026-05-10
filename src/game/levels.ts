@@ -1,25 +1,24 @@
 // One mega-map. Every NPC, prop, decorative GLB and portal lives in a
-// single shared coordinate space. Region palettes (Lysningen warm
-// magenta, Stjerneengen cool teal, Remnants ash gray) come from
-// regions.ts and blend per-pixel based on world XZ.
+// single shared coordinate space inside a roughly-circular playable
+// area (radius `WORLD_RADIUS`, see regions.ts). Region palettes
+// (Lysningen warm magenta, Stjerneengen cool teal, Remnants ash gray)
+// blend per-pixel based on world XZ.
 //
-// Spawn coordinates are anchored to the map.png reference: each
-// landmark's pixel UV in that image is converted via MAP_BOUNDS (see
-// regions.ts) to world (x, z). Player-start at the top of the map
-// lands on world origin; the big exit gate at the bottom lands ~110 m
-// south. The order in this file follows the natural north-to-south
-// progression visible on the map.
+// Layout: player spawns at world origin (= map centre). Lysningen
+// surrounds the spawn (north-of-centre); Stjerneengen owns the east
+// band where the locked gate + parked car live; Remnants is the
+// south third where the big exit gate sits at the world's edge.
+// Coordinates compressed so every spawn fits inside the 60 m
+// boundary circle Character.tsx clamps the player to.
 //
-// Adding a new spawn kind:
-//   1. Add the variant to the Spawn union below.
-//   2. Add a case in Spawns.tsx that mounts the matching component.
+// Order in this file follows the natural north-to-south progression
+// the player would take on foot.
 
 import type { DialogueLine } from '@/store/dialogue';
 import type { RegionId } from './regions';
 
 // Single-level shim: useLevel still tracks `currentLevelId`, but it's
-// always 'world' now. Region names live next to spawn coordinates;
-// fast-travel within the same world hits region waypoints.
+// always 'world' now.
 export type LevelId = 'world';
 
 export type StarNpcSpawn = {
@@ -34,16 +33,9 @@ export type BobleNpcSpawn = {
   id: string;
   position: [number, number];
   dialogue: DialogueLine[];
-  // Optional [x, z] in world space. After dialogue, Bobble follows
-  // the player. Once Bobble + the player both reach this point,
-  // Bobble fades out and `useGame.bobbleVanished` flips, unlocking
-  // whatever is gated on that flag (the parked car, in our case).
   leadTo?: [number, number];
 };
 
-// Inter-region fast-travel portal. Bowing within range fades to black,
-// translates the player to the target region's waypoint centre, then
-// fades back in.
 export type PortalSpawn = {
   kind: 'portal';
   id: string;
@@ -96,7 +88,6 @@ export type CarSpawn = {
   rotation?: number;
 };
 
-// Car that doubles as a portal once a game flag flips.
 export type CarPortalSpawn = {
   kind: 'car_portal';
   id: string;
@@ -149,24 +140,68 @@ export type Spawn =
 export type LevelDefinition = {
   id: LevelId;
   name: string;
-  // Initial player spawn for a fresh New Game. Travel / portals
-  // override this at runtime; useLevel.savedPosition wins on Continue.
   playerSpawn: { x: number; z: number };
   spawns: Spawn[];
 };
 
-// Trail-marker helper: small `purple_stone_cairn` along the main
-// north-to-south path so the route reads as a worn track on the
-// ground even though we don't paint a real path texture. Cairns
-// double as plant-exclusion bubbles, so plants stay off the trail.
+// Trail-marker helper. Doubles as plant-exclusion bubbles so the
+// path stays visibly clear even though we don't paint a real ground
+// trail. Pseudo-random rotation per coord keeps the line of cairns
+// from looking mechanically uniform.
 function trailCairn(id: string, x: number, z: number, scale = 0.7): ScenerySpawn {
   return {
     kind: 'purple_stone_cairn',
     id,
     position: [x, z],
     scale,
-    rotation: ((x * 7 + z * 13) % 6) - 3, // pseudo-random rotation per position
+    rotation: ((x * 7 + z * 13) % 6) - 3,
   };
+}
+
+// Perimeter ring: stones every 30° around radius BOUNDARY_RING_R
+// (just inside the player clamp at WORLD_RADIUS=60). Mixes
+// rock_stack and purple_stone_cairn so the ring reads as natural
+// rather than a fence. Each tile rotates pseudo-randomly so the
+// boundary doesn't feel symmetrical.
+const BOUNDARY_RING_R = 56;
+function perimeterRing(): Spawn[] {
+  const out: Spawn[] = [];
+  const count = 14;
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2;
+    const x = Math.cos(a) * BOUNDARY_RING_R;
+    const z = Math.sin(a) * BOUNDARY_RING_R;
+    // Skip the southernmost stone — that's where the exit gate sits.
+    // The angle ~π/2 (south) corresponds to i around count*0.25.
+    const angDeg = (a * 180) / Math.PI;
+    const isSouth = angDeg > 75 && angDeg < 105;
+    if (isSouth) continue;
+    // Alternate kinds so the ring has visual variety.
+    const kind: SceneryKind | 'rock_stack' =
+      i % 3 === 0
+        ? 'rock_stack'
+        : i % 3 === 1
+          ? 'purple_stone_cairn'
+          : 'tangled_root_sculpture';
+    if (kind === 'rock_stack') {
+      out.push({
+        kind: 'rock_stack',
+        id: `boundary.${i}`,
+        position: [x, z],
+        scale: 0.9 + ((i * 17) % 5) * 0.06,
+        rotation: ((i * 0.7) % (Math.PI * 2)) - Math.PI,
+      });
+    } else {
+      out.push({
+        kind,
+        id: `boundary.${i}`,
+        position: [x, z],
+        scale: 1.0 + ((i * 11) % 5) * 0.07,
+        rotation: ((i * 1.3) % (Math.PI * 2)) - Math.PI,
+      });
+    }
+  }
+  return out;
 }
 
 export const LEVELS: Record<LevelId, LevelDefinition> = {
@@ -176,22 +211,20 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
     playerSpawn: { x: 0, z: 0 },
     spawns: [
       // ===================================================================
-      // === LYSNINGEN — top of the map ===================================
+      // === LYSNINGEN — north-of-centre, around the player spawn ==========
       // ===================================================================
 
-      // -- Player-start area (around world origin, UV ~0.5, 0.07) --
-      // A small cluster of corals + a cairn frames the spawn so the
-      // player's first frame already shows depth around them.
+      // -- Player-start area (world origin = map centre). --
       { kind: 'purple_coral', id: 'lys.coral.start.a', position: [-8, -4], scale: 1.4 },
       { kind: 'glowing_purple_coral', id: 'lys.coral.start.b', position: [10, -2], scale: 1.2 },
-      trailCairn('lys.cairn.start', 0, 6, 0.9),
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.start.a', position: [0, 6], scale: 0.9 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.start.b', position: [-5, -8], scale: 0.7 },
 
-      // -- Digger NPC (the figure shown digging mid-frame on the map,
-      //    UV ~0.43, 0.22). Hands the player the key. --
+      // -- Digger NPC (north-west of spawn). --
       {
         kind: 'star_npc',
         id: 'lys.star.welcome',
-        position: [-10, 21],
+        position: [-12, -18],
         dialogue: [
           { text: 'Stand still for a moment.' },
           {
@@ -212,24 +245,19 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
           },
         ],
       },
-      // Ring of decoration around the digger so they read as a focal
-      // point rather than a lone figure on bare ground.
-      { kind: 'tangled_root_sculpture', id: 'lys.roots.digger', position: [-15, 25], scale: 1.3, rotation: -0.4 },
-      { kind: 'purple_coral_alt', id: 'lys.coral.digger', position: [-2, 24], scale: 1.1 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.digger', position: [-18, -22], scale: 1.3, rotation: -0.4 },
+      { kind: 'purple_coral_alt', id: 'lys.coral.digger', position: [-4, -22], scale: 1.0 },
 
-      // -- Top-right hut + Bobble (UV ~0.65, 0.12 / 0.75, 0.10). The
-      //    map shows the hut paired with a chat-bubble NPC right
-      //    beside it; that's where Bobble lives. --
-      { kind: 'stone_hut', id: 'lys.hut.upper-right', position: [21, 8], rotation: -0.3 },
+      // -- Stone hut + Bobble (north-east). --
+      { kind: 'stone_hut', id: 'lys.hut.upper-right', position: [18, -22], rotation: -0.3, scale: 0.9 },
       {
         kind: 'boble_npc',
         id: 'lys.boble.bobble',
-        position: [35, 4],
-        // Lead Bobble all the way south to the parked car — the long
-        // walk is the point. Once Bobble + player both stand within
-        // ~4.5 m of this point, Bobble fades out and the car portal
-        // unlocks.
-        leadTo: [39, 77],
+        position: [28, -16],
+        // Lead Bobble all the way south to the parked car. Once Bobble
+        // + the player both stand within ~4.5 m of this point, Bobble
+        // fades out and the car portal unlocks.
+        leadTo: [32, 30],
         dialogue: [
           { text: 'Oh, a fresh face. The lights felt it before I did.' },
           { text: "I'm Bobble. I don't have legs. Just opinions, and wind." },
@@ -238,69 +266,59 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
             text: 'So the digger gave you the key. They give it to most. I never asked why.',
           },
           {
-            text: "There's a car at the south edge of the world. The digger told you to walk past. I think you should look.",
+            text: "There's a car at the south side. The digger told you to walk past. I think you should look.",
           },
           {
-            text: "Take me to it. I'll keep close. The way is long. When we're there, I won't be of any more use to you.",
+            text: "Take me to it. I'll keep close. When we're there, I won't be of any more use to you.",
           },
           { text: "Don't worry about me after. Just open the door." },
         ],
       },
-      // Scenery near the hut.
-      { kind: 'glowing_purple_coral', id: 'lys.coral.hut.a', position: [16, 14], scale: 1.0 },
-      { kind: 'purple_coral', id: 'lys.coral.hut.b', position: [28, 14], scale: 1.2 },
-      trailCairn('lys.cairn.hut.a', 14, 4),
+      { kind: 'glowing_purple_coral', id: 'lys.coral.hut.a', position: [12, -10], scale: 1.0 },
+      { kind: 'purple_coral', id: 'lys.coral.hut.b', position: [24, -10], scale: 1.1 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.hut', position: [10, -28], scale: 1.0 },
 
-      // -- North-west cluster (rock_stack near upper-left, UV ~0.30,
-      //    0.18, plus scattered cairns) --
-      { kind: 'rock_stack', id: 'lys.rock.nw', position: [-30, 14], scale: 1.1 },
-      { kind: 'purple_stone_cairn', id: 'lys.cairn.nw.a', position: [-42, 18], scale: 1.2 },
-      { kind: 'purple_stone_cairn', id: 'lys.cairn.nw.b', position: [-52, 8], scale: 0.9 },
-      { kind: 'tangled_root_sculpture', id: 'lys.roots.nw', position: [-38, 28], scale: 1.4, rotation: 0.6 },
+      // -- North-west cluster. --
+      { kind: 'rock_stack', id: 'lys.rock.nw', position: [-26, -12], scale: 1.0 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.nw.a', position: [-32, -8], scale: 1.1 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.nw', position: [-22, -28], scale: 1.3, rotation: 0.6 },
 
-      // -- North-to-south trail markers (player-start → south). --
+      // -- Decorative natural props peppered around Lysningen. --
+      { kind: 'neon_vascular_tree', id: 'lys.tree.a', position: [-18, 4], scale: 1.2, rotation: 0.4 },
+      { kind: 'neon_vascular_tree', id: 'lys.tree.b', position: [32, -8], scale: 1.0, rotation: -0.2 },
+      { kind: 'trilo', id: 'lys.trilo.a', position: [-15, 8], scale: 1.3, rotation: 0.8, color: '#a456c8', emissive: '#2a1140' },
+      { kind: 'trilo', id: 'lys.trilo.b', position: [10, 12], scale: 1.1, rotation: -1.1, color: '#bf5fd8', emissive: '#321252' },
+
+      // -- Trail markers continuing south from spawn. --
       trailCairn('trail.a', 2, 14),
-      trailCairn('trail.b', 0, 30),
-      trailCairn('trail.c', -3, 42),
-
-      // -- Decorative natural props peppered around Lysningen --
-      { kind: 'neon_vascular_tree', id: 'lys.tree.a', position: [-22, 0], scale: 1.3, rotation: 0.4 },
-      { kind: 'neon_vascular_tree', id: 'lys.tree.b', position: [40, -4], scale: 1.1, rotation: -0.2 },
-      { kind: 'trilo', id: 'lys.trilo.a', position: [-18, 38], scale: 1.4, rotation: 0.8, color: '#a456c8', emissive: '#2a1140' },
-      { kind: 'trilo', id: 'lys.trilo.b', position: [10, 42], scale: 1.2, rotation: -1.1, color: '#bf5fd8', emissive: '#321252' },
+      trailCairn('trail.b', -2, 24),
 
       // ===================================================================
-      // === STJERNEENGEN — east + middle band ============================
+      // === STJERNEENGEN — east + middle band =============================
       // ===================================================================
 
-      // -- Locked stone gate on the east side (UV ~0.78, 0.30). On the
-      //    map it's drawn with a padlock; in code it's the existing
-      //    key-gated portal that fast-travels to the Stjerneengen
-      //    waypoint (i.e. the centre of this region). Optional — the
-      //    player can also just walk over there. --
+      // -- Locked stone gate on the east side. Optional fast-travel
+      //    to the Stjerneengen waypoint; player can also walk over. --
       {
         kind: 'portal',
         id: 'stj.portal.lock',
-        position: [39, 32],
+        position: [38, 0],
         targetRegion: 'stjerneengen',
         colorA: '#a4d8ff',
         colorB: '#3a4cff',
       },
-      // The little stone arch that frames the locked-gate icon on the
-      // map. Made of cairns + a hut so the area feels built rather
-      // than just a portal floating in grass.
-      { kind: 'stone_hut', id: 'stj.hut.east', position: [50, 30], rotation: 0.5, scale: 0.85 },
-      { kind: 'rock_stack', id: 'stj.rock.gate', position: [33, 36], scale: 1.0, rotation: 0.4 },
-      { kind: 'purple_stone_cairn', id: 'stj.cairn.gate.a', position: [44, 38], scale: 1.0 },
-      { kind: 'purple_stone_cairn', id: 'stj.cairn.gate.b', position: [30, 24], scale: 0.8 },
+      { kind: 'stone_hut', id: 'stj.hut.east', position: [44, -2], rotation: 0.5, scale: 0.85 },
+      { kind: 'rock_stack', id: 'stj.rock.gate', position: [32, 4], scale: 0.95, rotation: 0.4 },
+      { kind: 'purple_stone_cairn', id: 'stj.cairn.gate.a', position: [42, 8], scale: 1.0 },
+      { kind: 'purple_stone_cairn', id: 'stj.cairn.gate.b', position: [30, -6], scale: 0.8 },
 
-      // -- Mid-region scenery (Stjerneengen blends in around z = 50,
-      //    so trilos here read with cool teal tints). --
+      // -- Mid-region scenery. Stjerneengen palette dominates here so
+      //    trilos read with cool teal tints. --
       {
         kind: 'trilo',
         id: 'stj.trilo.center',
-        position: [33, 50],
-        scale: 1.6,
+        position: [25, 18],
+        scale: 1.4,
         rotation: 0.8,
         color: '#3d99a8',
         emissive: '#0a2a3a',
@@ -308,83 +326,76 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'trilo',
         id: 'stj.trilo.east',
-        position: [48, 58],
-        scale: 1.8,
+        position: [42, 22],
+        scale: 1.6,
         rotation: -1.2,
         color: '#4ec0c5',
         emissive: '#0c3340',
       },
-      { kind: 'rock_stack', id: 'stj.rock.center', position: [15, 60], scale: 1.3 },
-      { kind: 'rock_stack', id: 'stj.rock.east', position: [50, 64], scale: 0.9, rotation: 1.1 },
+      { kind: 'rock_stack', id: 'stj.rock.center', position: [12, 22], scale: 1.2 },
+      { kind: 'rock_stack', id: 'stj.rock.east', position: [44, 28], scale: 0.9, rotation: 1.1 },
 
-      // -- Lower-mid west scattering (chat-bubble NPC area on the
-      //    map at UV ~0.18, 0.40 — no NPC mounted there, but the
-      //    cairn cluster keeps the silhouette visible). --
-      { kind: 'rock_stack', id: 'stj.rock.west', position: [-44, 50], scale: 1.1, rotation: -0.3 },
-      { kind: 'purple_stone_cairn', id: 'stj.cairn.west.a', position: [-50, 60], scale: 1.0 },
-      { kind: 'tangled_root_sculpture', id: 'stj.roots.west', position: [-38, 62], scale: 1.5, rotation: 1.0 },
-      { kind: 'glowing_purple_coral', id: 'stj.coral.west', position: [-30, 56], scale: 1.0 },
+      // -- West side scattering. --
+      { kind: 'rock_stack', id: 'stj.rock.west', position: [-32, 14], scale: 1.0, rotation: -0.3 },
+      { kind: 'tangled_root_sculpture', id: 'stj.roots.west', position: [-28, 24], scale: 1.4, rotation: 1.0 },
+      { kind: 'glowing_purple_coral', id: 'stj.coral.west', position: [-22, 16], scale: 1.0 },
 
-      // -- A relic-card scattered along the way as a curiosity. --
+      // -- Relics scattered as curiosities. --
       {
         kind: 'relic',
         id: 'stj.relic.east',
-        position: [55, 50],
+        position: [48, 18],
         texture: '/relic3%201.png',
         height: 5.5,
       },
       {
         kind: 'relic',
         id: 'stj.relic.west',
-        position: [-22, 70],
+        position: [-18, 26],
         texture: '/relic2%201.png',
         height: 4.5,
       },
 
       // -- Trail markers continuing south. --
-      trailCairn('trail.d', 3, 56),
-      trailCairn('trail.e', -2, 72),
-      trailCairn('trail.f', 0, 86),
+      trailCairn('trail.c', 3, 32),
+      trailCairn('trail.d', -2, 40),
 
-      // -- The car the digger warned about (UV ~0.78, 0.62). Becomes
-      //    interactable once the player has led Bobble to it. --
+      // -- The car the digger warned about. Becomes interactable
+      //    once the player has led Bobble to it. --
       {
         kind: 'car_portal',
         id: 'stj.car.parked',
-        position: [39, 77],
+        position: [32, 30],
         rotation: 0.6,
         targetRegion: 'remnants',
         gate: 'bobbleVanished',
       },
-      { kind: 'tangled_root_sculpture', id: 'stj.roots.car', position: [44, 70], scale: 1.2, rotation: -0.6 },
-      { kind: 'purple_coral_alt', id: 'stj.coral.car', position: [33, 84], scale: 1.1 },
-      { kind: 'rock_stack', id: 'stj.rock.car', position: [48, 86], scale: 0.9, rotation: 0.2 },
+      { kind: 'tangled_root_sculpture', id: 'stj.roots.car', position: [38, 26], scale: 1.1, rotation: -0.6 },
+      { kind: 'purple_coral_alt', id: 'stj.coral.car', position: [26, 36], scale: 1.0 },
 
       // ===================================================================
-      // === REMNANTS — south end ==========================================
+      // === REMNANTS — south third, ending at the world boundary =========
       // ===================================================================
 
-      // -- The big exit gate at the bottom of the map (UV ~0.49,
-      //    0.86). This is the deepest point; bowing here loops the
-      //    player back to Lysningen so the world feels like a
-      //    circuit rather than a dead end. --
+      // -- The big exit gate at the southern edge of the playable
+      //    circle. Bowing here loops the player back to Lysningen so
+      //    the world feels like a circuit rather than a dead end. --
       {
         kind: 'portal',
         id: 'rem.portal.exit',
-        position: [-1, 110],
+        position: [0, 52],
         targetRegion: 'lysningen',
         colorA: '#cdd2dc',
         colorB: '#3b414e',
       },
 
-      // -- Remnant silhouettes scattered around the south. The 8
-      //    chunky alpha-cut PNGs the user authored work best as a
-      //    semi-circle of monuments south of the player's current
-      //    path. --
+      // -- Remnant silhouettes flanking the path to the exit. Tighter
+      //    cluster than before so they all sit comfortably inside the
+      //    boundary. --
       {
         kind: 'remnant',
         id: 'rem.silhouette.01',
-        position: [-22, 100],
+        position: [-22, 42],
         texture: '/remnants/remnant_01.png',
         height: 5.5,
         rotationOffset: -0.3,
@@ -392,7 +403,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'remnant',
         id: 'rem.silhouette.02',
-        position: [-12, 96],
+        position: [-12, 46],
         texture: '/remnants/remnant_02.png',
         height: 4.8,
         rotationOffset: 0.2,
@@ -400,7 +411,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'remnant',
         id: 'rem.silhouette.03',
-        position: [12, 96],
+        position: [12, 46],
         texture: '/remnants/remnant_03.png',
         height: 6,
         rotationOffset: -0.15,
@@ -408,7 +419,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'remnant',
         id: 'rem.silhouette.04',
-        position: [22, 100],
+        position: [22, 42],
         texture: '/remnants/remnant_04.png',
         height: 5,
         rotationOffset: 0.25,
@@ -416,7 +427,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'remnant',
         id: 'rem.silhouette.05',
-        position: [-30, 116],
+        position: [-30, 36],
         texture: '/remnants/remnant_05.png',
         height: 4.5,
         rotationOffset: 0.5,
@@ -424,7 +435,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'remnant',
         id: 'rem.silhouette.06',
-        position: [-15, 122],
+        position: [-18, 50],
         texture: '/remnants/remnant_06.png',
         height: 6.5,
         rotationOffset: -0.5,
@@ -432,28 +443,26 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       {
         kind: 'remnant',
         id: 'rem.silhouette.07',
-        position: [16, 122],
+        position: [16, 50],
         texture: '/remnants/remnant_07.png',
-        height: 7,
+        height: 5,
         rotationOffset: 0.1,
       },
       {
         kind: 'remnant',
         id: 'rem.silhouette.08',
-        position: [30, 118],
+        position: [28, 38],
         texture: '/remnants/remnant_08.png',
         height: 5,
         rotationOffset: -0.35,
       },
 
-      // -- Cairns flanking the exit gate to frame it. --
-      { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.a', position: [-8, 106], scale: 1.4, rotation: 0.3 },
-      { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.b', position: [8, 106], scale: 1.3, rotation: -0.4 },
-      { kind: 'rock_stack', id: 'rem.rock.gate', position: [0, 116], scale: 1.0 },
+      // -- Cairns flanking the exit gate. --
+      { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.a', position: [-7, 50], scale: 1.3, rotation: 0.3 },
+      { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.b', position: [8, 50], scale: 1.2, rotation: -0.4 },
 
-      // -- A few extra deep-south rocks for silhouette interest. --
-      { kind: 'rock_stack', id: 'rem.rock.east', position: [38, 105], scale: 0.9 },
-      { kind: 'rock_stack', id: 'rem.rock.west', position: [-38, 100], scale: 0.8, rotation: 0.6 },
+      // -- Perimeter ring of stones around the boundary circle. --
+      ...perimeterRing(),
     ],
   },
 };

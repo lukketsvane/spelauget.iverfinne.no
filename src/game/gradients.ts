@@ -43,7 +43,6 @@ export function updateGradientUniforms(hueAngle: number, brightness: number) {
 // during the play session lets us hot-replace palettes from the
 // console while iterating.
 const roleTextures: Partial<Record<GradientRole, THREE.Texture>> = {};
-const roleUniforms: Partial<Record<GradientRole, { value: THREE.Texture }>[]> = {};
 
 // Material registries by role so `setGradientTexture(role, tex)` can
 // re-point every patched material's `gradientMap` uniform at once.

@@ -349,6 +349,19 @@ export default function Character({ positionRef }: Props) {
     // Mutates g.position in place if the player is overlapping anything.
     collision.resolve(g.position, PLAYER_RADIUS);
 
+    // Soft circular world boundary: the player can't walk further
+    // than WORLD_RADIUS from origin. Pushes them back along the
+    // outward radial. Done after collision.resolve so a prop sitting
+    // right at the boundary can still nudge them inward without
+    // fighting the wall.
+    const distSq = g.position.x * g.position.x + g.position.z * g.position.z;
+    if (distSq > WORLD_RADIUS * WORLD_RADIUS) {
+      const dist = Math.sqrt(distSq);
+      const k = WORLD_RADIUS / dist;
+      g.position.x *= k;
+      g.position.z *= k;
+    }
+
     const desired: Role = !moving ? 'idle' : mag > 0.85 ? 'run' : 'walk';
     if (desired !== currentRole.current && !isPlayingExtra.current) {
       const from = clipsByRole.current[currentRole.current];

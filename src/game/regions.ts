@@ -36,89 +36,105 @@ export type RegionDef = {
 // --- Palette stops -------------------------------------------------------
 // Ported from the old per-level definitions, untouched.
 
+// --- Lysningen — warm magenta / pink, brightest of the three -----------
+// Pushed warmer than before (more red, less blue) so it reads
+// distinctly hotter than the cool teal of Stjerneengen and the cold
+// gray of the Remnants. Lightness range stays high — this is the
+// "alive" zone.
 const LYSNINGEN_GROUND: Stop[] = [
-  [0.0, '#8e6dc0'],
-  [0.35, '#b497d6'],
-  [0.7, '#d7c2eb'],
-  [1.0, '#f6e8fa'],
+  [0.0, '#7a3aa8'],
+  [0.35, '#b063d0'],
+  [0.7, '#e3a4dc'],
+  [1.0, '#fff0fa'],
 ];
 const LYSNINGEN_PLANT: Stop[] = [
-  [0.0, '#5a1c95'],
-  [0.3, '#b446e0'],
-  [0.55, '#ff6fd0'],
-  [0.8, '#ffb0e6'],
+  [0.0, '#3b0a78'],
+  [0.3, '#c0309c'],
+  [0.55, '#ff5cc0'],
+  [0.8, '#ffaad8'],
   [1.0, '#fff5fa'],
 ];
 const LYSNINGEN_HALO: Stop[] = [
   [0.0, '#000000'],
   [0.4, '#000000'],
-  [0.55, '#7a2db8'],
-  [0.75, '#ff60d0'],
-  [0.9, '#ffaee5'],
-  [1.0, '#fff5fc'],
+  [0.55, '#931ea0'],
+  [0.75, '#ff4cc0'],
+  [0.9, '#ffa8e0'],
+  [1.0, '#fff8fc'],
 ];
 const LYSNINGEN_RELIC: Stop[] = [
-  [0.0, '#2a0d4a'],
-  [0.25, '#5a2287'],
-  [0.5, '#a956c8'],
-  [0.75, '#f0a4dc'],
+  [0.0, '#1c0533'],
+  [0.25, '#5a1a87'],
+  [0.5, '#bd47c8'],
+  [0.75, '#ff8ed0'],
   [1.0, '#fff0f8'],
 ];
 
+// --- Stjerneengen — saturated teal / cyan, mid-lightness ---------------
+// Deepened toward pure cyan so it reads as clearly different from
+// the magenta of Lysningen even when the gradient blends them at the
+// border. Plant + halo lifted toward bright aqua so the relic cards
+// (which dominate this zone) glow cool against the ground.
 const STJERNE_GROUND: Stop[] = [
-  [0.0, '#1f4658'],
-  [0.35, '#3b758a'],
-  [0.7, '#7ab2c0'],
-  [1.0, '#c7e8ec'],
+  [0.0, '#0a3a52'],
+  [0.35, '#1f7090'],
+  [0.7, '#56b8ce'],
+  [1.0, '#bef0f4'],
 ];
 const STJERNE_PLANT: Stop[] = [
-  [0.0, '#062840'],
-  [0.35, '#1b6e94'],
-  [0.6, '#2eb6b8'],
-  [0.85, '#7ff0d4'],
-  [1.0, '#e8fff5'],
+  [0.0, '#021c3a'],
+  [0.35, '#0e6aa0'],
+  [0.6, '#18c4c8'],
+  [0.85, '#6cf4dc'],
+  [1.0, '#dafff4'],
 ];
 const STJERNE_HALO: Stop[] = [
   [0.0, '#000000'],
   [0.55, '#000000'],
-  [0.7, '#0f4a6e'],
-  [0.85, '#3df0d8'],
-  [1.0, '#ddfff8'],
+  [0.7, '#0a4878'],
+  [0.85, '#1fffdc'],
+  [1.0, '#d8fff8'],
 ];
 const STJERNE_RELIC: Stop[] = [
-  [0.0, '#0d2638'],
-  [0.25, '#264e6a'],
-  [0.5, '#3d96a6'],
-  [0.75, '#9be0d4'],
-  [1.0, '#f0fff8'],
+  [0.0, '#031826'],
+  [0.25, '#0e4868'],
+  [0.5, '#2d9fb4'],
+  [0.75, '#86eedc'],
+  [1.0, '#eafff4'],
 ];
 
+// --- Remnants — cold ash gray, darkest of the three --------------------
+// Pulled the whole curve down so this zone reads as visibly DEAD —
+// the remnant silhouettes need a backdrop that doesn't compete. Top
+// stop only ~70% lightness; bottom near-black. Hue cools toward
+// pure neutral so the sculpted-stone PNGs read as bone rather than
+// purple ruins.
 const REMNANT_GROUND: Stop[] = [
-  [0.0, '#1a1c22'],
-  [0.4, '#3a3d48'],
-  [0.7, '#6f7585'],
-  [1.0, '#c8cdd6'],
+  [0.0, '#08090c'],
+  [0.4, '#262936'],
+  [0.7, '#5a6070'],
+  [1.0, '#a8acb6'],
 ];
 const REMNANT_PLANT: Stop[] = [
-  [0.0, '#161821'],
-  [0.35, '#3b4253'],
-  [0.6, '#6e7686'],
-  [0.85, '#a8b0bd'],
-  [1.0, '#e6e9ef'],
+  [0.0, '#0a0d14'],
+  [0.35, '#262d3e'],
+  [0.6, '#525a6c'],
+  [0.85, '#8c95a4'],
+  [1.0, '#cfd2da'],
 ];
 const REMNANT_HALO: Stop[] = [
   [0.0, '#000000'],
   [0.6, '#000000'],
-  [0.78, '#1a2030'],
-  [0.92, '#7a85a0'],
-  [1.0, '#dde2ec'],
+  [0.78, '#0c1018'],
+  [0.92, '#586073'],
+  [1.0, '#b8bdc7'],
 ];
 const REMNANT_RELIC: Stop[] = [
-  [0.0, '#101218'],
-  [0.25, '#2c2f38'],
-  [0.5, '#5a606e'],
-  [0.75, '#a0a8b6'],
-  [1.0, '#eaedf3'],
+  [0.0, '#04050a'],
+  [0.25, '#1a1d26'],
+  [0.5, '#42485a'],
+  [0.75, '#8a909e'],
+  [1.0, '#d4d8df'],
 ];
 
 // Region centres compressed into the WORLD_RADIUS=60 disc. Lysningen
