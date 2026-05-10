@@ -86,11 +86,13 @@ export default function MainMenu() {
             {/* Continue first when a save exists — that's the most
                 common returning-player action. */}
             {hasSave && <TextButton onClick={startGame}>Continue</TextButton>}
-            {/* Travel: jump to any previously-discovered level. Hidden
-                until the player has reached at least one other world
-                (so a fresh New Game splash doesn't show a single
-                redundant button). */}
-            {travelTargets.length > 0 && (
+            {/* Travel: in-game shortcut to a discovered region. Hidden
+                on the splash / title screen — Travel is a "pause and
+                jump" tool, not a save-loader, and seeing it next to
+                Continue / New Game muddles the splash's purpose. The
+                player gets it back as soon as they're in-game and
+                open the pause overlay. */}
+            {hasStartedGame && travelTargets.length > 0 && (
               <>
                 <SectionLabel>Travel</SectionLabel>
                 {travelTargets.map((id) => (

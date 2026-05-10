@@ -10,6 +10,7 @@ import Dialogue from '@/hud/Dialogue';
 import LevelLabel from '@/hud/LevelLabel';
 import MainMenu from '@/hud/MainMenu';
 import PauseMenuButton from '@/hud/PauseMenuButton';
+import MapButton from '@/hud/MapButton';
 import BlackOverlay from '@/hud/BlackOverlay';
 import TeleportOverlay from '@/hud/TeleportOverlay';
 import MenuHotkey from '@/hud/MenuHotkey';
@@ -63,6 +64,7 @@ export default function Game() {
           <Dialogue />
           <LevelLabel />
           <PauseMenuButton />
+          <MapButton />
           <ToastHost />
         </>
       )}
