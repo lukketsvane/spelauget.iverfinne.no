@@ -26,10 +26,41 @@ export default function MainMenu() {
   const discoveredWaypoints = useLevel((s) => s.discoveredWaypoints);
   const currentRegionId = useLevel((s) => s.currentRegionId);
 
+  // "Has save" check: read whatever zustand persisted under
+  // `spelauget.game` and look for a meaningful in-game state. The
+  // game store is only written when the player actually does
+  // something that mutates it (New Game, picking up the key,
+  // following Bobble, etc.) — useLevel's autosave alone isn't a
+  // reliable signal because it can fire from background side
+  // effects. We additionally require at least one of the meaningful
+  // flags to be set, so a stale localStorage from an earlier
+  // half-played session that just contained default values won't
+  // show a Continue button on a "fresh" first launch.
   const [hasSave, setHasSave] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    setHasSave(window.localStorage.getItem('spelauget.level') !== null);
+    const raw = window.localStorage.getItem('spelauget.game');
+    if (!raw) {
+      setHasSave(false);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      // zustand persist wraps state as { state, version }.
+      const data = parsed?.state as
+        | {
+            hasKey?: boolean;
+            bobbleVanished?: boolean;
+            coins?: number;
+            crystals?: number;
+          }
+        | undefined;
+      const meaningful =
+        !!(data?.hasKey || data?.bobbleVanished || (data?.coins ?? 0) > 0 || (data?.crystals ?? 0) > 0);
+      setHasSave(meaningful);
+    } catch {
+      setHasSave(false);
+    }
   }, [showSettings]);
 
   const handleNewGame = () => {

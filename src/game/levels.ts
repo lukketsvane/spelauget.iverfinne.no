@@ -16,6 +16,7 @@
 
 import type { DialogueLine } from '@/store/dialogue';
 import type { RegionId } from './regions';
+import { WORLD_RADIUS } from './regions';
 
 // Single-level shim: useLevel still tracks `currentLevelId`, but it's
 // always 'world' now.
@@ -145,10 +146,18 @@ export type LevelDefinition = {
   spawns: Spawn[];
 };
 
+// World-scale multiplier for the BASE_SPAWNS array below. Bumping
+// this stretches the whole map proportionally — every spawn position
+// (and every Bobble leadTo) gets multiplied at LEVELS-time. Pair
+// this with WORLD_RADIUS / MAP_BOUNDS / REGION centres in regions.ts
+// so the layout stays self-consistent.
+const WORLD_SCALE = 2;
+
 // Trail-marker helper. Doubles as plant-exclusion bubbles so the
 // path stays visibly clear even though we don't paint a real ground
 // trail. Pseudo-random rotation per coord keeps the line of cairns
-// from looking mechanically uniform.
+// from looking mechanically uniform. Coordinates are in BASE units;
+// the WORLD_SCALE multiplier is applied at array assembly.
 function trailCairn(id: string, x: number, z: number, scale = 0.7): ScenerySpawn {
   return {
     kind: 'purple_stone_cairn',
@@ -159,24 +168,47 @@ function trailCairn(id: string, x: number, z: number, scale = 0.7): ScenerySpawn
   };
 }
 
-// Perimeter ring: stones every 30° around radius BOUNDARY_RING_R
-// (just inside the player clamp at WORLD_RADIUS=60). Mixes
-// rock_stack and purple_stone_cairn so the ring reads as natural
-// rather than a fence. Each tile rotates pseudo-randomly so the
-// boundary doesn't feel symmetrical.
-const BOUNDARY_RING_R = 56;
+// Multiplies every spawn position (and Bobble leadTo) by WORLD_SCALE
+// at array-assembly time. Lets BASE_SPAWNS keep its readable
+// "logical" coordinates while the actual game world stretches.
+function applyWorldScale(spawns: Spawn[]): Spawn[] {
+  return spawns.map((s) => {
+    const scaled: Spawn = {
+      ...s,
+      position: [s.position[0] * WORLD_SCALE, s.position[1] * WORLD_SCALE],
+    };
+    if (s.kind === 'boble_npc' && s.leadTo) {
+      (scaled as BobleNpcSpawn).leadTo = [
+        s.leadTo[0] * WORLD_SCALE,
+        s.leadTo[1] * WORLD_SCALE,
+      ];
+    }
+    return scaled;
+  });
+}
+
+// Perimeter ring: stones around radius BOUNDARY_RING_R (just inside
+// the player clamp at WORLD_RADIUS). Denser than before — 28 stones
+// around the full circumference, with a southern gap for the exit
+// gate. Mixes rock_stack, purple_stone_cairn, and tangled_root
+// sculpture so the ring reads as a natural cluster rather than a
+// fence. Already in WORLD coordinates (uses the bumped WORLD_RADIUS
+// directly); not run through applyWorldScale.
+const BOUNDARY_RING_R = WORLD_RADIUS - 4;
 function perimeterRing(): Spawn[] {
   const out: Spawn[] = [];
-  const count = 14;
+  const count = 28;
   for (let i = 0; i < count; i++) {
     const a = (i / count) * Math.PI * 2;
-    const x = Math.cos(a) * BOUNDARY_RING_R;
-    const z = Math.sin(a) * BOUNDARY_RING_R;
-    // Skip the southernmost stone — that's where the exit gate sits.
-    // The angle ~π/2 (south) corresponds to i around count*0.25.
+    // Slight radial jitter (±2 m) so the ring doesn't read as a
+    // perfect circle from the air.
+    const r = BOUNDARY_RING_R + (((i * 31) % 7) - 3) * 0.6;
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    // Skip the southernmost stones — that's where the exit gate sits.
     const angDeg = (a * 180) / Math.PI;
-    const isSouth = angDeg > 75 && angDeg < 105;
-    if (isSouth) continue;
+    const isSouthGate = angDeg > 82 && angDeg < 98;
+    if (isSouthGate) continue;
     // Alternate kinds so the ring has visual variety.
     const kind: SceneryKind | 'rock_stack' =
       i % 3 === 0
@@ -189,7 +221,7 @@ function perimeterRing(): Spawn[] {
         kind: 'rock_stack',
         id: `boundary.${i}`,
         position: [x, z],
-        scale: 0.9 + ((i * 17) % 5) * 0.06,
+        scale: 1.1 + ((i * 17) % 5) * 0.08,
         rotation: ((i * 0.7) % (Math.PI * 2)) - Math.PI,
       });
     } else {
@@ -197,7 +229,7 @@ function perimeterRing(): Spawn[] {
         kind,
         id: `boundary.${i}`,
         position: [x, z],
-        scale: 1.0 + ((i * 11) % 5) * 0.07,
+        scale: 1.2 + ((i * 11) % 5) * 0.09,
         rotation: ((i * 1.3) % (Math.PI * 2)) - Math.PI,
       });
     }
@@ -205,12 +237,11 @@ function perimeterRing(): Spawn[] {
   return out;
 }
 
-export const LEVELS: Record<LevelId, LevelDefinition> = {
-  world: {
-    id: 'world',
-    name: 'The Clearing',
-    playerSpawn: { x: 0, z: 0 },
-    spawns: [
+// "Logical" spawn coordinates — each (x, z) is in a 60-radius design
+// frame. applyWorldScale multiplies them by WORLD_SCALE before they
+// hit the runtime, so bumping WORLD_SCALE expands the whole map
+// proportionally without touching individual entries.
+const BASE_SPAWNS: Spawn[] = [
       // ===================================================================
       // === LYSNINGEN — north-of-centre, around the player spawn ==========
       // ===================================================================
@@ -574,8 +605,18 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       { kind: 'rock_stack', id: 'rem.rock.east', position: [32, 46], scale: 0.95, rotation: 0.7 },
       { kind: 'rock_stack', id: 'rem.rock.west', position: [-32, 46], scale: 0.85, rotation: -0.5 },
       { kind: 'rock_stack', id: 'rem.rock.north', position: [4, 32], scale: 0.8, rotation: 0.3 },
+];
 
-      // -- Perimeter ring of stones around the boundary circle. --
+export const LEVELS: Record<LevelId, LevelDefinition> = {
+  world: {
+    id: 'world',
+    name: 'The Clearing',
+    playerSpawn: { x: 0, z: 0 },
+    spawns: [
+      // BASE_SPAWNS get their positions x WORLD_SCALE so the whole
+      // layout stretches with one knob; perimeterRing already lives
+      // in WORLD_RADIUS coordinates and goes through unchanged.
+      ...applyWorldScale(BASE_SPAWNS),
       ...perimeterRing(),
     ],
   },

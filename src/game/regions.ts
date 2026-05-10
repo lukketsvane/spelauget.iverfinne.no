@@ -147,8 +147,8 @@ export const REGIONS: RegionDef[] = [
   {
     id: 'lysningen',
     name: 'The Clearing',
-    center: [0, -15],
-    sigma: 22,
+    center: [0, -30],
+    sigma: 44,
     palette: {
       ground: LYSNINGEN_GROUND,
       plant: LYSNINGEN_PLANT,
@@ -159,8 +159,8 @@ export const REGIONS: RegionDef[] = [
   {
     id: 'stjerneengen',
     name: 'The Star Meadow',
-    center: [25, 15],
-    sigma: 20,
+    center: [50, 30],
+    sigma: 40,
     palette: {
       ground: STJERNE_GROUND,
       plant: STJERNE_PLANT,
@@ -171,8 +171,8 @@ export const REGIONS: RegionDef[] = [
   {
     id: 'remnants',
     name: 'The Remnants',
-    center: [0, 45],
-    sigma: 22,
+    center: [0, 90],
+    sigma: 44,
     palette: {
       ground: REMNANT_GROUND,
       plant: REMNANT_PLANT,
@@ -193,8 +193,8 @@ export function getRegion(id: RegionId): RegionDef {
 // position back to the boundary each frame, so the irregular blob
 // shape on the map.png reads as solid even though we're enforcing a
 // simple circle. A perimeter ring of cairns (placed in levels.ts at
-// ~R-2) makes the wall visible without being a literal fence.
-export const WORLD_RADIUS = 60;
+// ~R-3) makes the wall visible without being a literal fence.
+export const WORLD_RADIUS = 120;
 
 // World-space rectangle the printed reference map (map.png) covers.
 // Symmetric around origin so map UV (0.5, 0.5) = world (0, 0): the
@@ -205,8 +205,8 @@ export const WORLD_RADIUS = 60;
 //   worldMin = top-left of the map image
 //   worldMax = bottom-right of the map image
 export const MAP_BOUNDS = {
-  worldMin: [-65, -65] as [number, number],
-  worldMax: [65, 65] as [number, number],
+  worldMin: [-130, -130] as [number, number],
+  worldMax: [130, 130] as [number, number],
 };
 
 // Convenience: convert a world XZ to a 0..1 UV inside the map. Clamped
