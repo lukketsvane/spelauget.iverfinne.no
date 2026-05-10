@@ -340,7 +340,18 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       { kind: 'tangled_root_sculpture', id: 'stj.roots.west', position: [-28, 24], scale: 1.4, rotation: 1.0 },
       { kind: 'glowing_purple_coral', id: 'stj.coral.west', position: [-22, 16], scale: 1.0 },
 
-      // -- Relics scattered as curiosities. --
+      // -- Relic-dominated zone. The Star Meadow is the artefact
+      //    field of this world: six painted-card relics scattered
+      //    across the middle band so wherever the player stops
+      //    inside Stjerneengen, at least one is nearby. Heights
+      //    vary so the silhouettes don't read as a uniform fence. --
+      {
+        kind: 'relic',
+        id: 'stj.relic.north',
+        position: [-4, 8],
+        texture: '/relic1%201.png',
+        height: 5.0,
+      },
       {
         kind: 'relic',
         id: 'stj.relic.east',
@@ -354,6 +365,27 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         position: [-18, 26],
         texture: '/relic2%201.png',
         height: 4.5,
+      },
+      {
+        kind: 'relic',
+        id: 'stj.relic.center',
+        position: [16, 14],
+        texture: '/relic4%201.png',
+        height: 4.2,
+      },
+      {
+        kind: 'relic',
+        id: 'stj.relic.south',
+        position: [4, 36],
+        texture: '/relic2%201.png',
+        height: 4.8,
+      },
+      {
+        kind: 'relic',
+        id: 'stj.relic.far-east',
+        position: [38, 8],
+        texture: '/relic1%201.png',
+        height: 5.2,
       },
 
       // -- Trail markers continuing south. --
