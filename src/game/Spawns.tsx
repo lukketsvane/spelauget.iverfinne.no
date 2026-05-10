@@ -17,6 +17,7 @@ import Remnant from './Remnant';
 import StaticGLB from './StaticGLB';
 import Crystal from './Crystal';
 import CrystalAltar from './CrystalAltar';
+import SkateNpc from './SkateNpc';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -182,6 +183,19 @@ export default function Spawns({ playerPosRef }: Props) {
                 playerPosRef={playerPosRef}
                 scale={s.scale}
                 rotationY={s.rotation}
+              />
+            );
+          case 'skate':
+            return (
+              <SkateNpc
+                key={s.id}
+                id={s.id}
+                center={s.position}
+                radius={s.radius}
+                height={s.height}
+                period={s.period}
+                scale={s.scale}
+                phase={s.phase}
               />
             );
           default:

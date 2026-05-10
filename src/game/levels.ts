@@ -146,6 +146,24 @@ export type CrystalAltarSpawn = {
   rotation?: number;
 };
 
+// Stingray-style ambient creature that orbits a fixed world-space
+// centre on a horizontal circle. Pure decoration — no collision,
+// dialogue, or interaction. Authored directly in WORLD coordinates
+// (skips applyWorldScale) so the user can tune radius/height in
+// metres without thinking about the WORLD_SCALE multiplier.
+export type SkateSpawn = {
+  kind: 'skate';
+  id: string;
+  // Orbit centre in world coords [x, z].
+  position: [number, number];
+  radius: number;
+  height: number;
+  // Seconds per full revolution. Negative reverses direction.
+  period: number;
+  scale?: number;
+  phase?: number;
+};
+
 export type Spawn =
   | StarNpcSpawn
   | BobleNpcSpawn
@@ -159,7 +177,8 @@ export type Spawn =
   | RemnantSpawn
   | ScenerySpawn
   | CrystalSpawn
-  | CrystalAltarSpawn;
+  | CrystalAltarSpawn
+  | SkateSpawn;
 
 export type LevelDefinition = {
   id: LevelId;
@@ -663,6 +682,18 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       // in WORLD_RADIUS coordinates and goes through unchanged.
       ...applyWorldScale(BASE_SPAWNS),
       ...perimeterRing(),
+      // Stingray that drifts on a wide loop over the central clearing.
+      // Authored in world coordinates (skips applyWorldScale) since
+      // radius/height are intuitive in metres.
+      {
+        kind: 'skate',
+        id: 'skate.clearing.orbit',
+        position: [0, -10],
+        radius: 28,
+        height: 7,
+        period: 28,
+        scale: 2.5,
+      },
     ],
   },
 };
