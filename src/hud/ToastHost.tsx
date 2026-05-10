@@ -5,13 +5,17 @@ import { useToast, type Toast } from '@/store/toast';
 
 const LIFE_MS = 3000;
 
-// Renders the toast queue as a stack at the bottom-centre of the screen.
+// Renders the toast queue as a stack at the top-centre of the screen.
 // Each toast self-dismisses after LIFE_MS via its own setTimeout — the
 // store stays minimal and doesn't need to know about timers.
+//
+// Top-centre keeps notifications in the eye-line during gameplay
+// (where the camera follows the player), and avoids fighting the
+// dialogue panel + emote button at the bottom.
 export default function ToastHost() {
   const toasts = useToast((s) => s.toasts);
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-24 z-30 flex flex-col items-center gap-2">
+    <div className="pointer-events-none absolute inset-x-0 top-6 z-30 flex flex-col items-center gap-2">
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} />
       ))}

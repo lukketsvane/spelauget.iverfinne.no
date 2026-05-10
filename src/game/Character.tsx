@@ -8,7 +8,9 @@ import { CHARACTER, EMOTE_IDLE_RANGE, PLAYER_MODEL_URL } from './config';
 import { playerWorldPos, useInput } from '@/store/input';
 import { useEmote } from '@/store/emote';
 import { useLevel } from '@/store/level';
+import { useMenu } from '@/store/menu';
 import { collision } from '@/store/collision';
+import { WORLD_RADIUS } from './regions';
 
 // Player collision footprint (metres). Big enough that the character
 // stops short of huts, doesn't squeeze between trilos.
@@ -230,12 +232,20 @@ export default function Character({ positionRef }: Props) {
   }, [positionRef]);
 
   // Autosave: write the current position to the level store every
-  // couple seconds. The store de-dupes near-identical writes and skips
-  // updates during a teleport, so localStorage bandwidth stays low.
-  // Also flush on unmount / page hide so a quick close doesn't lose
-  // the last few metres of walking.
+  // couple seconds. Gated on `hasStartedGame` so the splash screen
+  // (where the canvas is already mounted but the player hasn't
+  // chosen New Game yet) never creates a localStorage save key.
+  // Without this guard, the splash autosaves the default-spawn
+  // position immediately, which makes the menu show a spurious
+  // Continue button before the player has actually played anything.
+  //
+  // The store still de-dupes near-identical writes and skips updates
+  // during a teleport, so localStorage bandwidth stays low. Flush on
+  // unmount / page hide too, but only when in-game, so a quick close
+  // doesn't lose the last few metres of walking.
   useEffect(() => {
     const flush = () => {
+      if (!useMenu.getState().hasStartedGame) return;
       const g = group.current;
       if (!g) return;
       useLevel.getState().savePosition(g.position.x, g.position.z);

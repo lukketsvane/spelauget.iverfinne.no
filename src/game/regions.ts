@@ -121,15 +121,18 @@ const REMNANT_RELIC: Stop[] = [
   [1.0, '#eaedf3'],
 ];
 
-// Region centres are spread out in a triangle so each has air around
-// it. Keeping radii smallish so the gradient transitions feel like
-// crossing a clear threshold rather than a slow drift.
+// Region centres compressed into the WORLD_RADIUS=60 disc. Lysningen
+// surrounds the player spawn (north-of-centre), Stjerneengen owns the
+// east-middle band (locked gate + parked car), Remnants is the
+// south-third where the exit gate sits. Sigmas tightened so each
+// region's palette dominates clearly within the smaller world while
+// still blending smoothly between neighbours.
 export const REGIONS: RegionDef[] = [
   {
     id: 'lysningen',
     name: 'The Clearing',
-    center: [0, 0],
-    sigma: 26,
+    center: [0, -15],
+    sigma: 22,
     palette: {
       ground: LYSNINGEN_GROUND,
       plant: LYSNINGEN_PLANT,
@@ -140,8 +143,8 @@ export const REGIONS: RegionDef[] = [
   {
     id: 'stjerneengen',
     name: 'The Star Meadow',
-    center: [70, -15],
-    sigma: 26,
+    center: [25, 15],
+    sigma: 20,
     palette: {
       ground: STJERNE_GROUND,
       plant: STJERNE_PLANT,
@@ -152,8 +155,8 @@ export const REGIONS: RegionDef[] = [
   {
     id: 'remnants',
     name: 'The Remnants',
-    center: [30, 75],
-    sigma: 28,
+    center: [0, 45],
+    sigma: 22,
     palette: {
       ground: REMNANT_GROUND,
       plant: REMNANT_PLANT,
@@ -169,18 +172,25 @@ export function getRegion(id: RegionId): RegionDef {
   return r;
 }
 
-// World-space rectangle that the printed reference map (map.png)
-// covers. Used by the in-game map overlay to position the
-// "you-are-here" marker. Bounds are loose enough to encompass every
-// region's spawn cluster with margin; if the map artwork is later
-// re-cropped, bump these to match.
+// Roughly-circular playable world. The player can never walk further
+// than WORLD_RADIUS from the origin — Character.tsx clamps their
+// position back to the boundary each frame, so the irregular blob
+// shape on the map.png reads as solid even though we're enforcing a
+// simple circle. A perimeter ring of cairns (placed in levels.ts at
+// ~R-2) makes the wall visible without being a literal fence.
+export const WORLD_RADIUS = 60;
+
+// World-space rectangle the printed reference map (map.png) covers.
+// Symmetric around origin so map UV (0.5, 0.5) = world (0, 0): the
+// player spawns at the centre of the map, content radiates out around
+// them, and the south edge is the "end" of the world.
 //
 // Layout (X = east, Z = south):
 //   worldMin = top-left of the map image
 //   worldMax = bottom-right of the map image
 export const MAP_BOUNDS = {
-  worldMin: [-60, -40] as [number, number],
-  worldMax: [100, 120] as [number, number],
+  worldMin: [-65, -65] as [number, number],
+  worldMax: [65, 65] as [number, number],
 };
 
 // Convenience: convert a world XZ to a 0..1 UV inside the map. Clamped
