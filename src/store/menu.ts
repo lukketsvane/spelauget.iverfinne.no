@@ -21,6 +21,11 @@ type MenuState = {
   startNewGame: () => void;
   endFade: () => void;
   backToMenu: () => void;
+  // Drop the player back at the splash screen, resetting
+  // hasStartedGame so the menu re-renders in its full-bg pixel-art
+  // mode rather than as a pause overlay. The save itself isn't
+  // touched — Continue still picks up where they left off.
+  backToTitle: () => void;
   openSettings: () => void;
   closeSettings: () => void;
   openMap: () => void;
@@ -53,6 +58,14 @@ export const useMenu = create<MenuState>((set) => ({
   endFade: () => set({ fadingFromBlack: false }),
   backToMenu: () =>
     set({ inGame: false, showSettings: false, fadingFromBlack: false, showMap: false }),
+  backToTitle: () =>
+    set({
+      inGame: false,
+      hasStartedGame: false,
+      showSettings: false,
+      fadingFromBlack: false,
+      showMap: false,
+    }),
   openSettings: () => set({ showSettings: true }),
   closeSettings: () => set({ showSettings: false }),
   openMap: () => set({ showMap: true }),

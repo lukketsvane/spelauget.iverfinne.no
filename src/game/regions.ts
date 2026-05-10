@@ -169,6 +169,34 @@ export function getRegion(id: RegionId): RegionDef {
   return r;
 }
 
+// World-space rectangle that the printed reference map (map.png)
+// covers. Used by the in-game map overlay to position the
+// "you-are-here" marker. Bounds are loose enough to encompass every
+// region's spawn cluster with margin; if the map artwork is later
+// re-cropped, bump these to match.
+//
+// Layout (X = east, Z = south):
+//   worldMin = top-left of the map image
+//   worldMax = bottom-right of the map image
+export const MAP_BOUNDS = {
+  worldMin: [-60, -40] as [number, number],
+  worldMax: [100, 120] as [number, number],
+};
+
+// Convenience: convert a world XZ to a 0..1 UV inside the map. Clamped
+// at the edges so a player who's wandered outside the bounds gets
+// pinned against the nearest border rather than flying off-map.
+export function worldToMapUV(x: number, z: number): { u: number; v: number } {
+  const [minX, minZ] = MAP_BOUNDS.worldMin;
+  const [maxX, maxZ] = MAP_BOUNDS.worldMax;
+  const u = (x - minX) / Math.max(1e-3, maxX - minX);
+  const v = (z - minZ) / Math.max(1e-3, maxZ - minZ);
+  return {
+    u: Math.max(0, Math.min(1, u)),
+    v: Math.max(0, Math.min(1, v)),
+  };
+}
+
 // Returns the region the world XZ position is "inside" (highest
 // Gaussian weight). Used for region-discovery on proximity and to
 // label "now entering" toasts.

@@ -22,6 +22,7 @@ export default function MainMenu() {
   const closeSettings = useMenu((s) => s.closeSettings);
   const showSettings = useMenu((s) => s.showSettings);
   const hasStartedGame = useMenu((s) => s.hasStartedGame);
+  const backToTitle = useMenu((s) => s.backToTitle);
   const discoveredWaypoints = useLevel((s) => s.discoveredWaypoints);
   const currentRegionId = useLevel((s) => s.currentRegionId);
 
@@ -107,6 +108,13 @@ export default function MainMenu() {
               <TextButton onClick={handleNewGame}>New Game</TextButton>
             )}
             <TextButton onClick={openSettings}>Settings</TextButton>
+            {/* Title Screen: only meaningful from the in-game pause
+                overlay; on the splash itself we'd be sending the
+                player to the screen they're already on. The save is
+                untouched, so Continue still works after. */}
+            {hasStartedGame && (
+              <TextButton onClick={backToTitle}>Title Screen</TextButton>
+            )}
           </>
         ) : (
           <SettingsPanel onErase={handleErase} onBack={closeSettings} />
