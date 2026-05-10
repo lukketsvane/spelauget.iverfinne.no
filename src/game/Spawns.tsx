@@ -118,6 +118,7 @@ export default function Spawns({ playerPosRef }: Props) {
                 position={[s.position[0], 0, s.position[1]]}
                 scale={s.scale}
                 rotationY={s.rotation}
+                model={s.model}
               />
             );
           case 'car_portal':

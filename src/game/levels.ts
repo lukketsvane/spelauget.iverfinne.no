@@ -86,6 +86,7 @@ export type CarSpawn = {
   position: [number, number];
   scale?: number;
   rotation?: number;
+  model?: 'car_01' | 'car_02';
 };
 
 export type CarPortalSpawn = {
@@ -214,17 +215,28 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       // === LYSNINGEN — north-of-centre, around the player spawn ==========
       // ===================================================================
 
-      // -- Player-start area (world origin = map centre). --
-      { kind: 'purple_coral', id: 'lys.coral.start.a', position: [-8, -4], scale: 1.4 },
-      { kind: 'glowing_purple_coral', id: 'lys.coral.start.b', position: [10, -2], scale: 1.2 },
-      { kind: 'purple_stone_cairn', id: 'lys.cairn.start.a', position: [0, 6], scale: 0.9 },
-      { kind: 'purple_stone_cairn', id: 'lys.cairn.start.b', position: [-5, -8], scale: 0.7 },
+      // -- Player-start area (world origin = map centre).
+      // Sparse alcove so the digger NPC is unmissable right north
+      // of the spawn. Kept the corals as side decoration but pulled
+      // them OFF the north axis the player will look down first. --
+      { kind: 'purple_coral', id: 'lys.coral.start.a', position: [-9, 4], scale: 1.3 },
+      { kind: 'glowing_purple_coral', id: 'lys.coral.start.b', position: [10, 2], scale: 1.2 },
+      { kind: 'purple_coral_alt', id: 'lys.coral.start.c', position: [8, -6], scale: 1.1 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.start.a', position: [3, 6], scale: 0.8 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.start.b', position: [-7, 2], scale: 0.65 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.start', position: [6, 6], scale: 0.95, rotation: 0.9 },
 
-      // -- Digger NPC (north-west of spawn). --
+      // -- Digger NPC: directly north of the spawn, ~9 m away. The
+      //    player's iso camera frames straight south-west, so a prop
+      //    placed at world (0, -9) sits at the visible top-edge of
+      //    the spawn frame — completely unmissable. A single bright
+      //    glowing coral right beside the digger acts as a beacon
+      //    so the lying-flat dig animation reads as "here is
+      //    something, walk over". --
       {
         kind: 'star_npc',
         id: 'lys.star.welcome',
-        position: [-12, -18],
+        position: [0, -9],
         dialogue: [
           { text: 'Stand still for a moment.' },
           {
@@ -245,8 +257,17 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
           },
         ],
       },
-      { kind: 'tangled_root_sculpture', id: 'lys.roots.digger', position: [-18, -22], scale: 1.3, rotation: -0.4 },
-      { kind: 'purple_coral_alt', id: 'lys.coral.digger', position: [-4, -22], scale: 1.0 },
+      // -- Dig site, kept deliberately sparse so the digger silhouette
+      //    is the visual focus. One bright glowing coral RIGHT next
+      //    to them acts as a "look here" beacon; the rest of the
+      //    cluster sits a few metres away so it frames rather than
+      //    crowds. --
+      { kind: 'glowing_purple_coral', id: 'lys.coral.digger.beacon', position: [3, -8], scale: 1.2 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.digger.a', position: [-8, -16], scale: 1.2, rotation: -0.4 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.digger.b', position: [8, -16], scale: 0.9, rotation: 1.1 },
+      { kind: 'purple_coral_alt', id: 'lys.coral.digger.a', position: [-10, -6], scale: 0.9 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.digger.a', position: [-4, -16], scale: 0.7 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.digger.b', position: [6, -14], scale: 0.6 },
 
       // -- Stone hut + Bobble (north-east). --
       { kind: 'stone_hut', id: 'lys.hut.upper-right', position: [18, -22], rotation: -0.3, scale: 0.9 },
@@ -274,20 +295,39 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
           { text: "Don't worry about me after. Just open the door." },
         ],
       },
+      // -- Hut surroundings — the homestead reads as inhabited
+      //    rather than abandoned. --
       { kind: 'glowing_purple_coral', id: 'lys.coral.hut.a', position: [12, -10], scale: 1.0 },
       { kind: 'purple_coral', id: 'lys.coral.hut.b', position: [24, -10], scale: 1.1 },
-      { kind: 'purple_stone_cairn', id: 'lys.cairn.hut', position: [10, -28], scale: 1.0 },
+      { kind: 'purple_coral_alt', id: 'lys.coral.hut.c', position: [22, -28], scale: 0.95 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.hut.a', position: [10, -28], scale: 1.0 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.hut.b', position: [25, -18], scale: 0.7 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.hut', position: [32, -22], scale: 1.0, rotation: -0.7 },
 
-      // -- North-west cluster. --
-      { kind: 'rock_stack', id: 'lys.rock.nw', position: [-26, -12], scale: 1.0 },
+      // -- North-west cluster: a denser thicket of stones + roots
+      //    framing the boundary on that side. --
+      { kind: 'rock_stack', id: 'lys.rock.nw.a', position: [-26, -12], scale: 1.0 },
+      { kind: 'rock_stack', id: 'lys.rock.nw.b', position: [-36, -22], scale: 0.85, rotation: 0.5 },
       { kind: 'purple_stone_cairn', id: 'lys.cairn.nw.a', position: [-32, -8], scale: 1.1 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.nw.b', position: [-40, -2], scale: 0.85 },
       { kind: 'tangled_root_sculpture', id: 'lys.roots.nw', position: [-22, -28], scale: 1.3, rotation: 0.6 },
+      { kind: 'glowing_purple_coral', id: 'lys.coral.nw', position: [-30, -18], scale: 1.1 },
+      { kind: 'purple_coral', id: 'lys.coral.nw.b', position: [-38, -12], scale: 0.95 },
+
+      // -- North arc (above the spawn) — fills the gap between
+      //    spawn and the boundary so the player isn't staring at
+      //    bare ground when they look due north. --
+      { kind: 'neon_vascular_tree', id: 'lys.tree.north', position: [4, -32], scale: 1.3, rotation: 0.2 },
+      { kind: 'tangled_root_sculpture', id: 'lys.roots.north', position: [-6, -28], scale: 1.1, rotation: 0.4 },
+      { kind: 'glowing_purple_coral', id: 'lys.coral.north', position: [-16, -32], scale: 1.0 },
+      { kind: 'purple_stone_cairn', id: 'lys.cairn.north', position: [10, -36], scale: 0.9 },
 
       // -- Decorative natural props peppered around Lysningen. --
       { kind: 'neon_vascular_tree', id: 'lys.tree.a', position: [-18, 4], scale: 1.2, rotation: 0.4 },
       { kind: 'neon_vascular_tree', id: 'lys.tree.b', position: [32, -8], scale: 1.0, rotation: -0.2 },
       { kind: 'trilo', id: 'lys.trilo.a', position: [-15, 8], scale: 1.3, rotation: 0.8, color: '#a456c8', emissive: '#2a1140' },
       { kind: 'trilo', id: 'lys.trilo.b', position: [10, 12], scale: 1.1, rotation: -1.1, color: '#bf5fd8', emissive: '#321252' },
+      { kind: 'trilo', id: 'lys.trilo.c', position: [22, 4], scale: 1.0, rotation: 0.3, color: '#9c4fb8', emissive: '#220a35' },
 
       // -- Trail markers continuing south from spawn. --
       trailCairn('trail.a', 2, 14),
@@ -335,10 +375,32 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       { kind: 'rock_stack', id: 'stj.rock.center', position: [12, 22], scale: 1.2 },
       { kind: 'rock_stack', id: 'stj.rock.east', position: [44, 28], scale: 0.9, rotation: 1.1 },
 
-      // -- West side scattering. --
-      { kind: 'rock_stack', id: 'stj.rock.west', position: [-32, 14], scale: 1.0, rotation: -0.3 },
+      // -- West side scattering — denser cluster framing the meadow
+      //    so players walking west don't fall off into bare ground. --
+      { kind: 'rock_stack', id: 'stj.rock.west.a', position: [-32, 14], scale: 1.0, rotation: -0.3 },
+      { kind: 'rock_stack', id: 'stj.rock.west.b', position: [-40, 22], scale: 0.85, rotation: 0.6 },
       { kind: 'tangled_root_sculpture', id: 'stj.roots.west', position: [-28, 24], scale: 1.4, rotation: 1.0 },
-      { kind: 'glowing_purple_coral', id: 'stj.coral.west', position: [-22, 16], scale: 1.0 },
+      { kind: 'glowing_purple_coral', id: 'stj.coral.west.a', position: [-22, 16], scale: 1.0 },
+      { kind: 'glowing_purple_coral', id: 'stj.coral.west.b', position: [-34, 8], scale: 0.95 },
+      { kind: 'purple_coral_alt', id: 'stj.coral.west.c', position: [-38, 32], scale: 1.0 },
+      { kind: 'purple_stone_cairn', id: 'stj.cairn.west', position: [-26, 32], scale: 0.85 },
+
+      // -- Second car: an abandoned wreck (car_02) on the west side
+      //    of the meadow, opposite the parked-and-warned-about car.
+      //    Adds the "graveyard of cars" feel the digger's warning
+      //    suggests — multiple wrecks in this clearing, not just one.
+      //    Static (non-portal); just a collidable prop. --
+      {
+        kind: 'car',
+        id: 'stj.car.wreck',
+        position: [-12, 18],
+        rotation: -1.4,
+        scale: 6,
+        model: 'car_02',
+      },
+      { kind: 'tangled_root_sculpture', id: 'stj.roots.wreck', position: [-16, 22], scale: 1.1, rotation: 0.8 },
+      { kind: 'purple_stone_cairn', id: 'stj.cairn.wreck.a', position: [-8, 22], scale: 0.7 },
+      { kind: 'purple_stone_cairn', id: 'stj.cairn.wreck.b', position: [-16, 14], scale: 0.65 },
 
       // -- Relic-dominated zone. The Star Meadow is the artefact
       //    field of this world: six painted-card relics scattered
@@ -399,6 +461,7 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
         id: 'stj.car.parked',
         position: [32, 30],
         rotation: 0.6,
+        scale: 6,
         targetRegion: 'remnants',
         gate: 'bobbleVanished',
       },
@@ -492,6 +555,25 @@ export const LEVELS: Record<LevelId, LevelDefinition> = {
       // -- Cairns flanking the exit gate. --
       { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.a', position: [-7, 50], scale: 1.3, rotation: 0.3 },
       { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.b', position: [8, 50], scale: 1.2, rotation: -0.4 },
+      { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.c', position: [-12, 54], scale: 0.9, rotation: 1.1 },
+      { kind: 'purple_stone_cairn', id: 'rem.cairn.gate.d', position: [12, 54], scale: 0.95, rotation: -1.0 },
+
+      // -- Tangled roots between the remnants — the silhouettes
+      //    don't read as "monuments in a field" without something
+      //    growing between them. --
+      { kind: 'tangled_root_sculpture', id: 'rem.roots.a', position: [-22, 46], scale: 1.2, rotation: 0.4 },
+      { kind: 'tangled_root_sculpture', id: 'rem.roots.b', position: [20, 38], scale: 1.0, rotation: -0.6 },
+      { kind: 'tangled_root_sculpture', id: 'rem.roots.c', position: [0, 40], scale: 1.4, rotation: 1.1 },
+
+      // -- A neon vascular tree as a tall silhouette near the exit
+      //    (extra vertical interest in an otherwise low-profile
+      //    region full of squat ruins). --
+      { kind: 'neon_vascular_tree', id: 'rem.tree.exit', position: [4, 44], scale: 1.5, rotation: 0.6 },
+
+      // -- Extra rock_stacks scattered for ground texture. --
+      { kind: 'rock_stack', id: 'rem.rock.east', position: [32, 46], scale: 0.95, rotation: 0.7 },
+      { kind: 'rock_stack', id: 'rem.rock.west', position: [-32, 46], scale: 0.85, rotation: -0.5 },
+      { kind: 'rock_stack', id: 'rem.rock.north', position: [4, 32], scale: 0.8, rotation: 0.3 },
 
       // -- Perimeter ring of stones around the boundary circle. --
       ...perimeterRing(),
