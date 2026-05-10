@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { playerWorldPos } from '@/store/input';
 import { useMenu } from '@/store/menu';
 import { worldToMapUV } from '@/game/regions';
@@ -9,10 +10,11 @@ import { worldToMapUV } from '@/game/regions';
 //
 // Renders a "you-are-here" marker on top of the map image at the
 // player's current world position, mapped through MAP_BOUNDS into
-// image UV space. We snapshot the position when the overlay mounts
-// rather than subscribing per-frame: opening the map is a discrete
-// keypress, the player isn't moving while it's up, and a static
-// snapshot is plenty.
+// image UV space. While the overlay is open we run a per-frame rAF
+// loop that re-reads playerWorldPos and updates the marker — the
+// player can still walk via WASD / arrows (keyboard listeners are
+// window-level, so the overlay doesn't block them) and the marker
+// tracks them in real time.
 //
 // Sits below the pause menu in z-order so opening the menu while the
 // map is up still surfaces the menu cleanly. Pointer events are
@@ -20,12 +22,24 @@ import { worldToMapUV } from '@/game/regions';
 export default function MapOverlay() {
   const showMap = useMenu((s) => s.showMap);
   const closeMap = useMenu((s) => s.closeMap);
+  // Live UV. Seeded from the singleton playerWorldPos at mount and
+  // refreshed every animation frame while the overlay is up.
+  const [{ u, v }, setUV] = useState(() =>
+    worldToMapUV(playerWorldPos.x, playerWorldPos.z),
+  );
+
+  useEffect(() => {
+    if (!showMap) return;
+    let raf = 0;
+    const tick = () => {
+      setUV(worldToMapUV(playerWorldPos.x, playerWorldPos.z));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [showMap]);
 
   if (!showMap) return null;
-
-  // playerWorldPos is the singleton Vector3 Character writes into
-  // every frame — readable cheaply from anywhere outside R3F.
-  const { u, v } = worldToMapUV(playerWorldPos.x, playerWorldPos.z);
 
   return (
     <div
