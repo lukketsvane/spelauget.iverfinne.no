@@ -51,7 +51,7 @@ export default function Dialogue() {
       <div className="pointer-events-auto absolute inset-x-4 bottom-4 mx-auto max-w-2xl">
         <div
           onPointerDown={handleAdvance}
-          className="relative cursor-pointer rounded-2xl border border-violet-300/40 bg-gradient-to-br from-violet-950/95 via-purple-950/95 to-fuchsia-950/90 p-5 shadow-[0_8px_40px_rgba(170,80,220,0.35)] backdrop-blur"
+          className="relative cursor-pointer rounded-2xl border border-violet-300/40 bg-violet-950/95 p-5"
         >
           {line?.speaker && (
             <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-pink-300/90">

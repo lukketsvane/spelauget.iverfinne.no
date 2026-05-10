@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Voice Pack — audition</title>
+<style>
+  body { background:#0a0a14; color:#cdc1ff; font-family: system-ui,-apple-system,sans-serif; padding:24px; max-width:760px; margin:0 auto; }
+  h1 { font-weight:500; letter-spacing:.04em; color:#fff; margin-bottom:.4em }
+  p  { opacity:.75; line-height:1.5 }
+  .voice { background:#15152a; border:1px solid #2a2a4a; border-radius:8px; padding:14px 16px; margin:14px 0 }
+  .voice h2 { margin:0 0 4px; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:#9d8cff }
+  .voice .meta { font-size:12px; opacity:.6; margin-bottom:10px }
+  button { background:#3a2a6e; color:#fff; border:0; padding:6px 12px; border-radius:4px; margin:2px; cursor:pointer; font-size:13px }
+  button:hover { background:#5040a0 }
+  .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center }
+  .talk { background:#a0729a; padding:8px 16px; border-radius:6px; }
+  .ctrl { display:flex; gap:8px; align-items:center; margin:18px 0; padding:12px; background:#15152a; border-radius:6px }
+  label { font-size:12px; opacity:.7 }
+  input[type=range] { vertical-align:middle }
+</style>
+</head>
+<body>
+  <h1>Voice pack — audition</h1>
+  <p>Click <b>SPEAK</b> on each character a few times to hear randomisation +
+    pitch jitter. Adjust pitch range &amp; volume sliders below to find the right
+    feel for your NPC, then copy the values into your <code>profiles</code> config.</p>
+
+  <div class="ctrl">
+    <label>pitch min <input type="range" id="pmin" min="0.6" max="1.4" step="0.01" value="0.92"><span id="pminv">0.92</span></label>
+    <label>pitch max <input type="range" id="pmax" min="0.6" max="1.4" step="0.01" value="1.08"><span id="pmaxv">1.08</span></label>
+    <label>volume <input type="range" id="vol" min="0" max="1" step="0.05" value="0.55"><span id="volv">0.55</span></label>
+  </div>
+
+  <div id="list"></div>
+
+<script type="module">
+import { CharacterVoicePlayer } from './voice-player.js';
+
+const VOICES = [
+  ['alex',         'Male, mid — calm everyday human'],
+  ['ian',          'Male, light — younger / energetic'],
+  ['sean',         'Male, raspier — gruff / older'],
+  ['karen',        'Female, mid — everyday human'],
+  ['meghan',       'Female, light — younger / softer'],
+  ['pixel_lowest', 'Synth, very low — heavy creature / boss'],
+  ['pixel_low',    'Synth, low — troll / spirit'],
+  ['pixel_med',    'Synth, mid — generic creature'],
+  ['pixel_high',   'Synth, high — sprite / korok-ish'],
+];
+
+const profiles = Object.fromEntries(VOICES.map(([p]) => [p, { pool: p }]));
+const player = new CharacterVoicePlayer('.', profiles);
+
+const list = document.getElementById('list');
+list.innerHTML = '<p style="opacity:.5">Loading clips…</p>';
+await player.load();
+list.innerHTML = '';
+
+const get = id => document.getElementById(id);
+const sliders = ['pmin','pmax','vol'];
+sliders.forEach(s => get(s).addEventListener('input', () => get(s+'v').textContent = get(s).value));
+
+for (const [id, desc] of VOICES) {
+  const div = document.createElement('div');
+  div.className = 'voice';
+  const n = (player.pools[id] || []).length;
+  div.innerHTML = `
+    <h2>${id}</h2>
+    <div class="meta">${desc} — ${n} clips</div>
+    <div class="row">
+      <button class="talk" data-id="${id}">▶ SPEAK</button>
+      <button data-id="${id}" data-n="6">×6 quick</button>
+    </div>`;
+  list.appendChild(div);
+}
+
+list.addEventListener('click', e => {
+  const id = e.target.dataset.id;
+  if (!id) return;
+  player.resume();
+  const n = +(e.target.dataset.n || 1);
+  player.profiles[id].pitchRange = [+get('pmin').value, +get('pmax').value];
+  player.profiles[id].volume = +get('vol').value;
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => player.speak(id), i * 220);
+  }
+});
+</script>
+</body>
+</html>

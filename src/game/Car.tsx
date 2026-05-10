@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { collision } from '@/store/collision';
+import { registerMeshCollider } from '@/store/collision';
 
 const URL = '/models/car_01.glb';
-const COLLISION_RADIUS = 2.4;
 
 type Props = {
   id: string;
@@ -17,8 +16,13 @@ type Props = {
 
 // Static car prop. Left mostly un-tinted on purpose — it's supposed
 // to feel out-of-place in the meadow, the way the digger warned.
+//
+// Collider is an OBB matching the car's actual silhouette: rotated
+// rectangle so the player can squeeze past the front bumper without
+// being blocked from a metre away by a fat tangent circle.
 export default function Car({ id, position, scale = 1, rotationY = 0 }: Props) {
   const { scene } = useGLTF(URL);
+  const groupRef = useRef<THREE.Group>(null);
 
   const cloned = useMemo(() => {
     const c = scene.clone(true);
@@ -33,12 +37,18 @@ export default function Car({ id, position, scale = 1, rotationY = 0 }: Props) {
   }, [scene]);
 
   useEffect(() => {
-    collision.register(id, position[0], position[2], COLLISION_RADIUS * scale);
-    return () => collision.unregister(id);
-  }, [id, position, scale]);
+    const g = groupRef.current;
+    if (!g) return;
+    return registerMeshCollider(id, g, rotationY, 'box');
+  }, [id, position, scale, rotationY, cloned]);
 
   return (
-    <group position={position} rotation={[0, rotationY, 0]} scale={scale}>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={[0, rotationY, 0]}
+      scale={scale}
+    >
       <primitive object={cloned} />
     </group>
   );

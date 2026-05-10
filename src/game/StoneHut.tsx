@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { collision } from '@/store/collision';
+import { registerMeshCollider } from '@/store/collision';
 
 const URL = '/models/stone_hut.glb';
-// Approximate footprint of a scale-1 hut. Per-instance scale multiplies
-// this when the spawn overrides it.
-const COLLISION_RADIUS = 4.5;
 
 type Props = {
   id: string;
@@ -20,8 +17,14 @@ type Props = {
 // Static stone hut. The GLB is untextured (Tripo export with neutral
 // baseColor) so we tint the material into the moody palette via a
 // MeshLambertMaterial swap.
+//
+// Collider is derived from the actual rendered mesh's bounds (see
+// registerMeshCollider) so the player walks around the visible
+// rectangular footprint rather than a hardcoded "scale × constant"
+// circle that didn't match the building.
 export default function StoneHut({ id, position, scale = 1, rotationY = 0 }: Props) {
   const { scene } = useGLTF(URL);
+  const groupRef = useRef<THREE.Group>(null);
 
   const cloned = useMemo(() => {
     const c = scene.clone(true);
@@ -40,14 +43,23 @@ export default function StoneHut({ id, position, scale = 1, rotationY = 0 }: Pro
     return c;
   }, [scene]);
 
-  // Register collider centred on the prop's world position.
+  // Register an OBB collider that matches the hut's actual rectangular
+  // footprint. The kind is forced to 'box' even though the GLB is
+  // close to square — huts read better with sharp corners than a
+  // tangent circle.
   useEffect(() => {
-    collision.register(id, position[0], position[2], COLLISION_RADIUS * scale);
-    return () => collision.unregister(id);
-  }, [id, position, scale]);
+    const g = groupRef.current;
+    if (!g) return;
+    return registerMeshCollider(id, g, rotationY, 'box');
+  }, [id, position, scale, rotationY, cloned]);
 
   return (
-    <group position={position} rotation={[0, rotationY, 0]} scale={scale}>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={[0, rotationY, 0]}
+      scale={scale}
+    >
       <primitive object={cloned} />
     </group>
   );

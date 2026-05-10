@@ -28,6 +28,49 @@ export default function Character({ positionRef }: Props) {
         mesh.castShadow = true;
         mesh.receiveShadow = false;
         mesh.frustumCulled = false;
+
+        // Pop the eyes against the rest of the character. Tripo exports
+        // sometimes name eye sub-meshes "eye"/"eyeball"/"pupil"; we also
+        // catch materials whose existing colour is already very dark
+        // (typical eyeball black) and treat them the same way.
+        // Eyes stay unshaded — toneMapped: false — so they read at
+        // close-to-pure black against the lit body, giving the
+        // character a clearly visible gaze even at low dpr.
+        const meshName = mesh.name.toLowerCase();
+        const matName = (
+          (mesh.material as THREE.Material | THREE.Material[] | undefined) &&
+          !Array.isArray(mesh.material) &&
+          (mesh.material as THREE.MeshStandardMaterial).name
+            ? (mesh.material as THREE.MeshStandardMaterial).name
+            : ''
+        ).toLowerCase();
+        const isEyeByName =
+          /\beye|pupil|iris|sclera/.test(meshName) ||
+          /\beye|pupil|iris|sclera/.test(matName);
+
+        const matCheck = !Array.isArray(mesh.material)
+          ? (mesh.material as THREE.MeshStandardMaterial)
+          : null;
+        const baseColor = matCheck?.color;
+        const isEyeByColor =
+          baseColor &&
+          baseColor.r < 0.15 &&
+          baseColor.g < 0.15 &&
+          baseColor.b < 0.15;
+
+        if (isEyeByName || isEyeByColor) {
+          // Replace with a flat unlit material so the eye reads as a
+          // sharp dark dot regardless of the day-cycle lighting.
+          mesh.material = new THREE.MeshBasicMaterial({
+            color: '#0a0810',
+            toneMapped: false,
+          });
+          mesh.castShadow = false;
+          // Push eyes very slightly outward along their normals so they
+          // don't z-fight with the head when the body mesh is at the
+          // same depth.
+          mesh.scale.multiplyScalar(1.08);
+        }
       }
     });
   }, [scene]);

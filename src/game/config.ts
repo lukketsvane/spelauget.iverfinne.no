@@ -6,7 +6,13 @@ export const CAMERA = {
   // of the world in the distance instead of looking straight down.
   offset: { x: 14, y: 9, z: 14 },
   // Ortho frustum height in world units. Larger = more visible world.
+  // Desktop is zoomed in (smaller view) compared to mobile, where the
+  // player benefits from more world context on a small screen. Scene.tsx
+  // picks between these based on viewport width.
   viewSize: 18,
+  viewSizeDesktop: 14,
+  // Width threshold (CSS px) above which the desktop zoom kicks in.
+  desktopBreakpoint: 900,
   // 0..1 — how snappy the camera follow is. 0.12 ≈ smooth but responsive.
   followLerp: 0.12,
 } as const;

@@ -20,18 +20,25 @@ export default function EmoteButton() {
           e.stopPropagation();
           request();
         }}
-        className="pointer-events-auto absolute bottom-6 right-6 flex h-16 w-16 items-center justify-center rounded-full border border-pink-300/60 bg-violet-950/70 shadow-[0_8px_28px_rgba(236,90,200,0.55)] backdrop-blur transition active:scale-95"
-        aria-label="Interagér"
+        className="pointer-events-auto absolute bottom-6 right-6 flex flex-col items-center gap-1 transition active:scale-95"
+        aria-label="Click to interact"
       >
-        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden>
+        {/* Inward 2.25-turn Archimedean-ish spiral. Each elliptical-arc
+            segment is a quarter-circle whose radius shrinks by 0.5 each
+            step, starting at r=10 (top) and ending at r=1 (centre). */}
+        <svg viewBox="0 0 24 24" width="56" height="56" aria-hidden>
           <path
-            d="M12 2.5l2.39 6.46 6.86.36-5.27 4.39 1.74 6.65L12 16.9l-5.72 3.46 1.74-6.65L2.75 9.32l6.86-.36L12 2.5z"
-            fill="#ff9bd6"
-            stroke="#ffe3f2"
-            strokeWidth="1.2"
+            d="M 12 2 A 9.5 9.5 0 0 1 21 12 A 8.5 8.5 0 0 1 12 20 A 7.5 7.5 0 0 1 5 12 A 6.5 6.5 0 0 1 12 6 A 5.5 5.5 0 0 1 17 12 A 4.5 4.5 0 0 1 12 16 A 3.5 3.5 0 0 1 9 12 A 2.5 2.5 0 0 1 12 10 A 1.5 1.5 0 0 1 13 12"
+            fill="none"
+            stroke="#ff9bd6"
+            strokeWidth="2.2"
+            strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-pink-200">
+          Click to interact
+        </span>
       </button>
     </div>
   );

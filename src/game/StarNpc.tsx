@@ -105,7 +105,7 @@ export default function StarNpc({ id, position, dialogue, playerPosRef }: Props)
       const hadKey = useGame.getState().hasKey;
       useGame.getState().giveKey();
       if (!hadKey) {
-        useToast.getState().push('Got the key', 'success');
+        useToast.getState().push('Item received', 'success');
       }
     });
     return unsub;

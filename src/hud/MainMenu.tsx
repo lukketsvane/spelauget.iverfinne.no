@@ -50,7 +50,7 @@ export default function MainMenu() {
     <div
       className={
         'fixed inset-0 z-50 flex flex-col items-center justify-end overflow-hidden ' +
-        (hasStartedGame ? 'bg-black/70 backdrop-blur-sm' : 'bg-black')
+        (hasStartedGame ? 'bg-black/70' : 'bg-black')
       }
     >
       {/* Splash background — only on the very first visit, before the
@@ -66,48 +66,20 @@ export default function MainMenu() {
         />
       )}
 
-      <div className="mb-12 flex flex-col items-center gap-3">
+      <div className="mb-12 flex w-64 max-w-[80vw] flex-col items-stretch gap-3">
         {!showSettings ? (
           <>
-            {/* Continue first when a save exists. */}
-            {hasSave && (
-              <ImageButton src="/menu/bt_continue.png" alt="Continue" onClick={startGame} />
-            )}
-            <ImageButton src="/menu/bt_new_game.png" alt="New Game" onClick={handleNewGame} />
-            <ImageButton src="/menu/bt_settings.png" alt="Settings" onClick={openSettings} />
+            {/* Continue first when a save exists — that's the most
+                common returning-player action. */}
+            {hasSave && <TextButton onClick={startGame}>Continue</TextButton>}
+            <TextButton onClick={handleNewGame}>New Game</TextButton>
+            <TextButton onClick={openSettings}>Settings</TextButton>
           </>
         ) : (
           <SettingsPanel onErase={handleErase} onBack={closeSettings} />
         )}
       </div>
     </div>
-  );
-}
-
-function ImageButton({
-  src,
-  alt,
-  onClick,
-}: {
-  src: string;
-  alt: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="block transition active:scale-95"
-      aria-label={alt}
-    >
-      <img
-        src={src}
-        alt={alt}
-        className="block w-64 max-w-[80vw] select-none"
-        style={{ imageRendering: 'pixelated' }}
-        draggable={false}
-      />
-    </button>
   );
 }
 
@@ -159,7 +131,7 @@ function ControlsLegend() {
     ['Menu', 'M or Esc'],
   ];
   return (
-    <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3 backdrop-blur">
+    <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3">
       <div className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-pink-200">
         Controls
       </div>
@@ -195,7 +167,7 @@ function RangeSlider({
   format?: (v: number) => string;
 }) {
   return (
-    <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3 backdrop-blur">
+    <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-[0.22em] text-pink-200">
           {label}
@@ -228,14 +200,14 @@ function TextButton({
 }) {
   const palette =
     variant === 'danger'
-      ? 'border-rose-400/70 bg-rose-950/80 text-rose-100 shadow-[0_4px_20px_rgba(236,80,120,0.35)]'
-      : 'border-pink-300/60 bg-violet-950/80 text-violet-100 shadow-[0_4px_20px_rgba(170,80,220,0.35)]';
+      ? 'border-rose-400/70 bg-rose-950/80 text-rose-100'
+      : 'border-pink-300/60 bg-violet-950/80 text-violet-100';
   return (
     <button
       type="button"
       onClick={onClick}
       className={
-        'block w-full rounded-md border-2 px-4 py-3 text-sm font-bold uppercase tracking-[0.22em] backdrop-blur transition active:scale-95 ' +
+        'block w-full rounded-md border-2 px-4 py-3 text-sm font-bold uppercase tracking-[0.22em] transition active:scale-95 ' +
         palette
       }
     >

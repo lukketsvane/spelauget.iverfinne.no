@@ -9,7 +9,11 @@ import { LEVELS } from './levels';
 import { useLevel } from '@/store/level';
 
 const FACE_CAMERA_Y = Math.PI / 4;
-const COLLISION_RADIUS = 1.2;
+// Half-depth of the relic card's collision footprint along the local
+// Z axis (perpendicular to the painted face). The card is a flat
+// plane, so this is just enough thickness to feel solid when the
+// player runs into it edge-on.
+const CARD_THICKNESS = 0.18;
 
 type Props = {
   id: string;
@@ -27,6 +31,11 @@ type Props = {
 // Texture luminance is remapped through the level's relic gradient so
 // the relic art harmonises with the rest of the world's palette and
 // follows the day-cycle hue/brightness drift.
+//
+// Collider is a thin OBB rotated to match the card's orientation so
+// the player can pass close along the edge but is blocked when
+// walking face-on into the painting. Width comes from the actual
+// rendered card so a wider painting blocks a wider strip.
 export default function Relic({ id, position, texture, height = 4.5, scale = 1 }: Props) {
   const tex = useTexture(texture);
 
@@ -73,11 +82,21 @@ export default function Relic({ id, position, texture, height = 4.5, scale = 1 }
     return { w, h };
   }, [tex, height, scale]);
 
-  // Register a small collider so the player walks around tall relics.
+  // Thin OBB matching the card's ground footprint. Half-extents are
+  // (w/2) along the card's local X (its width) and a tiny constant
+  // along local Z (depth). The same FACE_CAMERA_Y rotation that
+  // orients the painting also orients the collider.
   useEffect(() => {
-    collision.register(id, position[0], position[2], COLLISION_RADIUS * scale);
+    collision.registerBox(
+      id,
+      position[0],
+      position[2],
+      dims.w / 2,
+      CARD_THICKNESS,
+      FACE_CAMERA_Y,
+    );
     return () => collision.unregister(id);
-  }, [id, position, scale]);
+  }, [id, position, dims.w]);
 
   return (
     <mesh

@@ -21,20 +21,22 @@ const FADE_MS = 4000;
 // already has music. Most browsers block autoplay until the user has
 // interacted with the page; if play() rejects we register a one-shot
 // listener that retries on the very next pointer / key event.
+//
+// Setup + teardown live in a single useEffect so React 18 StrictMode's
+// mount → unmount → remount cycle creates a fresh Audio element each
+// time rather than leaving a stale "we already started" flag in a ref
+// while the cleanup pauses the only audio instance.
 export default function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const startedRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
     const audio = new Audio();
     audio.loop = false;
     audio.volume = 0;
     audio.preload = 'auto';
     audioRef.current = audio;
 
+    // --- Track queue ---------------------------------------------------
     let queue: string[] = [];
     let queueLevel: LevelId | null = null;
     const refillQueue = () => {
@@ -42,42 +44,48 @@ export default function BackgroundMusic() {
       queue = [...PLAYLISTS[level]].sort(() => Math.random() - 0.5);
       queueLevel = level;
     };
-    const nextTrack = () => {
+    // Picks the next track and kicks off play(). Returns the play
+    // promise so the caller can hook fade-in / autoplay-fallback off
+    // the first attempt's resolution.
+    const nextTrack = (): Promise<void> | null => {
       const currentLevel = useLevel.getState().currentLevelId;
-      // If the player changed level mid-track the queue is now stale —
-      // toss it and refill from the new level's pool. This keeps each
-      // post-transition track on-mood for the level we're actually in.
+      // Stale queue (level changed mid-track) → toss it and refill from
+      // the new level's pool. Each post-transition track stays on-mood.
       if (queue.length === 0 || queueLevel !== currentLevel) refillQueue();
       const src = queue.shift();
-      if (!src) return;
+      if (!src) return null;
       audio.src = src;
-      audio.play().catch(() => {});
+      return audio.play();
     };
-    audio.addEventListener('ended', nextTrack);
-    nextTrack();
+    const onEnded = () => {
+      nextTrack()?.catch(() => {});
+    };
+    audio.addEventListener('ended', onEnded);
 
+    // --- Volume fade-in ------------------------------------------------
     let fadeStart = 0;
     let raf = 0;
     const tick = () => {
       const t = Math.min(1, (performance.now() - fadeStart) / FADE_MS);
-      // Fade reads useAudio each frame so a slider change mid-fade is
-      // honoured immediately.
+      // Read useAudio each frame so a slider drag mid-fade is honoured
+      // immediately rather than snapping at the end of the fade.
       audio.volume = t * useAudio.getState().musicVolume;
       if (t < 1) raf = requestAnimationFrame(tick);
     };
-
     const beginFade = () => {
       if (fadeStart) return;
       fadeStart = performance.now();
       raf = requestAnimationFrame(tick);
     };
 
-    // Try playing immediately. If the browser blocked us (no prior user
-    // gesture), wait for the first input event and retry then.
-    const attempt = audio.play();
+    // --- First attempt + autoplay fallback -----------------------------
     let cleanupListener: (() => void) | null = null;
+    const attempt = nextTrack();
     if (attempt) {
       attempt.then(beginFade).catch(() => {
+        // Browser blocked autoplay — wait for the first user gesture
+        // and retry then. Touchstart / pointerdown / keydown all count
+        // as gestures that unlock audio in modern browsers.
         const onFirst = () => {
           audio.play().then(beginFade).catch(() => {});
           window.removeEventListener('pointerdown', onFirst);
@@ -95,6 +103,7 @@ export default function BackgroundMusic() {
       });
     }
 
+    // --- Live volume slider --------------------------------------------
     // After the initial fade we react to slider changes via subscribe.
     const unsub = useAudio.subscribe((s) => {
       const a = audioRef.current;
@@ -104,10 +113,10 @@ export default function BackgroundMusic() {
       if (elapsed >= FADE_MS) a.volume = s.musicVolume;
     });
 
-    // Pause music when the tab is backgrounded — there's no point
-    // burning bandwidth on audio the player can't hear, and resuming
-    // mid-track when they come back is more pleasant than restarting
-    // from silence.
+    // --- Pause when tab backgrounded -----------------------------------
+    // No point burning bandwidth on audio the player can't hear, and
+    // resuming mid-track when they come back is more pleasant than
+    // restarting from silence.
     const onVisibility = () => {
       const a = audioRef.current;
       if (!a) return;
@@ -119,24 +128,16 @@ export default function BackgroundMusic() {
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    // --- Teardown ------------------------------------------------------
     return () => {
       cancelAnimationFrame(raf);
-      audio.removeEventListener('ended', nextTrack);
+      audio.removeEventListener('ended', onEnded);
       document.removeEventListener('visibilitychange', onVisibility);
       cleanupListener?.();
       unsub();
-    };
-  }, []);
-
-  // Pause on full unmount.
-  useEffect(() => {
-    return () => {
-      const a = audioRef.current;
-      if (a) {
-        a.pause();
-        a.src = '';
-        audioRef.current = null;
-      }
+      audio.pause();
+      audio.src = '';
+      audioRef.current = null;
     };
   }, []);
 

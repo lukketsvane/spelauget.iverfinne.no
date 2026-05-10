@@ -14,7 +14,6 @@ import BlackOverlay from '@/hud/BlackOverlay';
 import TeleportOverlay from '@/hud/TeleportOverlay';
 import MenuHotkey from '@/hud/MenuHotkey';
 import FpsOverlay from '@/hud/FpsOverlay';
-import SaveIndicator from '@/hud/SaveIndicator';
 import ToastHost from '@/hud/ToastHost';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
@@ -34,8 +33,10 @@ export default function Game() {
         shadows={{ type: THREE.PCFSoftShadowMap, enabled: true }}
         // dpr < 1 renders to a smaller framebuffer; the canvas is then
         // stretched up via CSS image-rendering: pixelated for the crisp
-        // pixel-art upscale.
-        dpr={0.3}
+        // pixel-art upscale. 0.45 is a touch finer than the original 0.3
+        // — enough that small details (NPC eyes, plant edges) read
+        // crisp without losing the chunky pixel-art identity.
+        dpr={0.45}
         gl={{ antialias: false, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -60,7 +61,6 @@ export default function Game() {
           <Dialogue />
           <LevelLabel />
           <PauseMenuButton />
-          <SaveIndicator />
           <ToastHost />
         </>
       )}

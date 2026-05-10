@@ -35,7 +35,7 @@ function ToastItem({ toast }: { toast: Toast }) {
   return (
     <div
       className={
-        'animate-toast-in rounded-md border-2 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] shadow-[0_4px_18px_rgba(0,0,0,0.45)] backdrop-blur ' +
+        'animate-toast-in rounded-md border-2 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] ' +
         accent
       }
     >

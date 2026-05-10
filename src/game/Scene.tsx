@@ -7,8 +7,8 @@ import * as THREE from 'three';
 import Character from './Character';
 import Ground from './Ground';
 import Plants from './Plants';
+import Underbrush from './Underbrush';
 import Particles from './Particles';
-import Footsteps from './Footsteps';
 import Spawns from './Spawns';
 import ExposureSync from './ExposureSync';
 import { CAMERA } from './config';
@@ -61,7 +61,13 @@ export default function Scene() {
     const cam = camRef.current;
     if (!cam) return;
     const aspect = size.width / Math.max(1, size.height);
-    const v = CAMERA.viewSize;
+    // Desktop gets a tighter frustum for a more cinematic, zoomed-in
+    // shot; small screens stay wider so the player still sees enough
+    // of the world to navigate on a phone.
+    const v =
+      size.width >= CAMERA.desktopBreakpoint
+        ? CAMERA.viewSizeDesktop
+        : CAMERA.viewSize;
     cam.left = (-v * aspect) / 2;
     cam.right = (v * aspect) / 2;
     cam.top = v / 2;
@@ -224,9 +230,9 @@ export default function Scene() {
       <primitive object={lightTargetRef.current} />
 
       <Ground />
+      <Underbrush playerPosRef={characterPos} exclusions={plantExclusions} />
       <Plants playerPosRef={characterPos} exclusions={plantExclusions} />
       <Particles playerPosRef={characterPos} />
-      <Footsteps playerPosRef={characterPos} />
       <Spawns playerPosRef={characterPos} />
       <Character positionRef={characterPos} />
       <ExposureSync />

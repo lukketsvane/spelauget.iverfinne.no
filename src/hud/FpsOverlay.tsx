@@ -41,7 +41,7 @@ export default function FpsOverlay() {
     <div className="pointer-events-none absolute right-3 top-3 z-50">
       <div
         className={
-          'rounded bg-black/55 px-2 py-1 font-mono text-[11px] tabular-nums tracking-wide backdrop-blur ' +
+          'rounded bg-black/55 px-2 py-1 font-mono text-[11px] tabular-nums tracking-wide ' +
           color
         }
       >

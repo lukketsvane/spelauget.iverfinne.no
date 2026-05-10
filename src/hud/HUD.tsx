@@ -21,7 +21,7 @@ export default function HUD() {
   return (
     <div className="pointer-events-none absolute inset-0 select-none">
       {/* Top-left: hearts + collected items, stacked vertically. */}
-      <div className="absolute left-4 top-4 flex flex-col gap-2 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+      <div className="absolute left-4 top-4 flex flex-col gap-2 text-violet-100">
         <div className="flex gap-1.5">
           {Array.from({ length: 3 }, (_, i) => (
             <Heart key={i} filled={i < hearts} />
@@ -38,7 +38,7 @@ export default function HUD() {
 
       {/* Top-right: XP. Pause button now lives in the bottom-left so
           this corner is back to its normal top spot. */}
-      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100">
         <div className="text-xs">
           {xp} / {xpToNext} XP
         </div>
@@ -80,7 +80,7 @@ function InventorySlot({
 }) {
   return (
     <div
-      className="animate-key-pop flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(255,210,160,0.45)]"
+      className="animate-key-pop flex items-center gap-1.5"
       title={alt}
     >
       <img
