@@ -226,6 +226,24 @@ export type FlisPoolSpawn = {
   scale?: number;
 };
 
+// Painted-card sprite for the blod_verden asset family. Source PNG has
+// a black background that the shader maps to alpha; the silhouette /
+// coloured shape is preserved verbatim. Use for plants, creatures,
+// moths, portals, monuments — anything 2D in Blodverden.
+export type BlodSpriteSpawn = {
+  kind: 'blod_sprite';
+  id: string;
+  position: [number, number];
+  texture: string;
+  height?: number;
+  scale?: number;
+  rotationOffset?: number;
+  noCollide?: boolean;
+  yOffset?: number;
+  glow?: number;
+  tint?: string;
+};
+
 // Flat tile-textured deck plane — drop one (or several) into a world
 // to pave the ground around the pool with the same wet ceramic tiles.
 // No collider; it's a visual surface only.
@@ -258,7 +276,8 @@ export type Spawn =
   | SkateSpawn
   | GiantessSpawn
   | FlisPoolSpawn
-  | FlisFloorSpawn;
+  | FlisFloorSpawn
+  | BlodSpriteSpawn;
 
 export type LevelDefinition = {
   id: LevelId;

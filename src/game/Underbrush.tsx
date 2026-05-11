@@ -111,9 +111,12 @@ export default function Underbrush({ playerPosRef, exclusions }: Props) {
           vec3 wp = (modelMatrix * vec4(transformed, 1.0)).xyz;
 
           // Slow sway, much smaller amplitude than the tall plants
-          // (this is brush, not bushes).
-          float windPhase = uTime * 1.1 + wp.x * 0.55 + wp.z * 0.42;
-          float sway = uv.y * 0.06;
+          // (this is brush, not bushes). Tuned WAY down — the
+          // underbrush should be almost still, just a barely-visible
+          // breath of motion. Previous values made the whole field
+          // visibly wave and read as distracting.
+          float windPhase = uTime * 0.45 + wp.x * 0.55 + wp.z * 0.42;
+          float sway = uv.y * 0.018;
           transformed.x += sin(windPhase) * sway;
           transformed.z += cos(windPhase * 0.9) * sway * 0.5;
 

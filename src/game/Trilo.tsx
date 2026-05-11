@@ -38,17 +38,36 @@ export default function Trilo({
 
   const cloned = useMemo(() => {
     const c = scene.clone(true);
-    const mat = new THREE.MeshLambertMaterial({
+    // Body material — soft, matte Lambert so the carapace reads as
+    // organic shell rather than wet plastic.
+    const bodyMat = new THREE.MeshLambertMaterial({
       color,
       emissive: new THREE.Color(emissive),
       emissiveIntensity: 0.4,
+    });
+    // Eye material — glossy clearcoat physical material with bright
+    // emissive so each eye reads as a wet bead catching the light,
+    // matching the user's "shiny trilobite eyes" brief. The trilo
+    // GLB ships with the body as "Quad Sphere" and the two eyes as
+    // separate Sphere meshes — anything whose name starts with
+    // "Sphere" (but isn't the Quad Sphere body) gets the eye material.
+    const eyeMat = new THREE.MeshPhysicalMaterial({
+      color: '#ffffff',
+      emissive: new THREE.Color('#a8d8ff'),
+      emissiveIntensity: 0.6,
+      roughness: 0.04,
+      metalness: 0.1,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.02,
     });
     c.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        mesh.material = mat;
+        const name = mesh.name ?? '';
+        const isEye = /sphere/i.test(name) && !/quad/i.test(name);
+        mesh.material = isEye ? eyeMat : bodyMat;
       }
     });
     return c;

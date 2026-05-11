@@ -11,6 +11,7 @@ import Underbrush from './Underbrush';
 import Particles from './Particles';
 import Spawns from './Spawns';
 import ExposureSync from './ExposureSync';
+import BlodFogLayer from './BlodFogLayer';
 import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
@@ -271,6 +272,7 @@ export default function Scene() {
       <Plants playerPosRef={characterPos} exclusions={plantExclusions} />
       <Particles playerPosRef={characterPos} />
       <Spawns playerPosRef={characterPos} />
+      <BlodFogLayer />
       <Character positionRef={characterPos} />
       <ExposureSync />
     </>

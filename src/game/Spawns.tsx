@@ -25,6 +25,7 @@ import SkateNpc from './SkateNpc';
 import Giantess from './Giantess';
 import FlisPool from './FlisPool';
 import FlisFloor from './FlisFloor';
+import BlodSprite from './BlodSprite';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -278,6 +279,22 @@ export default function Spawns({ playerPosRef }: Props) {
                 width={s.width}
                 depth={s.depth}
                 tileSize={s.tileSize}
+              />
+            );
+          case 'blod_sprite':
+            return (
+              <BlodSprite
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                texture={s.texture}
+                height={s.height}
+                scale={s.scale}
+                rotationOffset={s.rotationOffset}
+                noCollide={s.noCollide}
+                yOffset={s.yOffset}
+                glow={s.glow}
+                tint={s.tint}
               />
             );
           default:

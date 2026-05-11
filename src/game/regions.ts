@@ -53,27 +53,32 @@ export type RegionDef = {
 // azure so the spawn area reads like a luminous blue clearing.
 // Lightness floor lifted (0.0 stop is a deep navy rather than near-
 // black) so the spawn is brighter than the other zones, not deeper.
+// Per user brief: ground must never read as black at the low end —
+// even at the bottom of the day/night cycle we want a clear violet/
+// navy, not a void. Floor stops lifted accordingly.
 const LYSNINGEN_GROUND: Stop[] = [
-  [0.0, '#1d4f9a'],
-  [0.35, '#3a8ce4'],
+  [0.0, '#3a2c70'],
+  [0.35, '#5560c0'],
   [0.7, '#7cc4ff'],
   [1.0, '#e8f4ff'],
 ];
+// Per user brief: Hagen plants are ALWAYS purple + blue, no pink.
+// Previous palette injected hot magenta at the mid-low band; replaced
+// with deeper purple so the ramp stays inside the purple→blue→white
+// family at every luminance.
 const LYSNINGEN_PLANT: Stop[] = [
-  // Pink injection at the mid-low band — Hagen plants now lift to a
-  // hot magenta highlight before settling into the sky-blue ramp.
-  // Reads as "luminous flora against the azure clearing" rather
-  // than monochrome blue. Tuned via the dev gradient panel.
-  [0.0, '#1a3e7a'],
-  [0.3, '#f78cf1'],
+  [0.0, '#2a1a6a'],
+  [0.3, '#6a4ad8'],
   [0.55, '#62b8ff'],
   [0.8, '#bce0ff'],
   [1.0, '#f0f8ff'],
 ];
+// Halo floor lifted off pure black so distant horizon retains a faint
+// violet glow at midnight, not a black band.
 const LYSNINGEN_HALO: Stop[] = [
-  [0.0, '#000000'],
-  [0.4, '#0a1c40'],
-  [0.55, '#1e4ea0'],
+  [0.0, '#1a0e3a'],
+  [0.4, '#2c1d68'],
+  [0.55, '#3e4ea8'],
   [0.75, '#62a8ff'],
   [0.9, '#bcdcff'],
   [1.0, '#f8fcff'],
@@ -348,7 +353,7 @@ export const REGIONS: RegionDef[] = [
   },
   {
     id: 'senter',
-    name: 'Speilverden',
+    name: 'Fragleverden',
     center: [90, 70],
     sigma: 22,
     palette: {

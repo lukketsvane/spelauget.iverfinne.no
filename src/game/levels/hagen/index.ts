@@ -165,10 +165,15 @@ const HAGEN_WORLD_SPAWNS: Spawn[] = [
     kind: 'skate',
     id: 'skate.clearing.orbit',
     position: [0, -2],
-    radius: 10,
-    height: 4,
-    period: 16,
-    scale: 1.0,
+    // Much wider orbit so the skate ranges across the whole clearing
+    // rather than circling a single spot — the player notices it
+    // gliding past from different angles as they walk around.
+    radius: 45,
+    height: 5,
+    period: 48,
+    // 1/5 of the previous size — small distant silhouette rather than
+    // a stage-filling mascot, matching the "ambient creature" intent.
+    scale: 0.2,
   },
 ];
 
