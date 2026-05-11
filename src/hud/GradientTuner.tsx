@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getRegionStops, mutateRegionStops, type Stop } from '@/game/gradients';
 import {
   REGIONS,
@@ -8,7 +8,7 @@ import {
   type RegionId,
 } from '@/game/regions';
 import { useLevel } from '@/store/level';
-import { useTuner } from '@/store/tuner';
+import { useTuner, type FogConfig } from '@/store/tuner';
 
 // Dev-tuner panel. Pinned to the right edge of the screen, scrollable.
 // Lets you live-edit the active region's gradient stops and fog
@@ -79,17 +79,52 @@ export default function GradientTuner() {
 
       <div className="flex-1 overflow-y-auto px-3 py-2 text-xs">
         <RegionSelect value={target} onChange={setTarget} />
+        <CopyAllButton region={target} />
         <FogBlock region={target} />
         {ROLES.map((role) => (
           <RoleBlock key={role} region={target} role={role} />
         ))}
         <div className="mt-3 text-[10px] text-violet-300/60">
-          edits mutate REGIONS in place; copy values back into
-          regions.ts when happy.
+          edits mutate REGIONS in place; use Copy buttons to paste
+          values back into regions.ts / tuner.ts.
         </div>
       </div>
     </div>
   );
+}
+
+// Variable-name prefix used in regions.ts (e.g. BLOD_GROUND). Most
+// region IDs map to their upper-case form; `remnants` keeps the
+// singular convention the existing code already uses.
+const VAR_PREFIX: Record<RegionId, string> = {
+  lysningen: 'LYSNINGEN',
+  blod: 'BLOD',
+  geometri: 'GEOMETRI',
+  siste: 'SISTE',
+  senter: 'SENTER',
+  remnants: 'REMNANT',
+};
+
+function formatStopsBlock(region: RegionId, role: PaletteRole): string {
+  const stops = getRegionStops(region, role);
+  const varName = `${VAR_PREFIX[region] ?? region.toUpperCase()}_${role.toUpperCase()}`;
+  const lines = stops.map(([t, c]) => `  [${t.toFixed(2)}, '${c}'],`).join('\n');
+  return `const ${varName}: Stop[] = [\n${lines}\n];`;
+}
+
+function formatFogLine(region: RegionId, fog: FogConfig): string {
+  return `  ${region}: { color: '${fog.color}', near: ${fog.near}, far: ${fog.far} },`;
+}
+
+function formatRegionAll(region: RegionId, fog: FogConfig): string {
+  const palette = ROLES.map((role) => formatStopsBlock(region, role)).join('\n\n');
+  return [
+    `// === ${VAR_PREFIX[region] ?? region.toUpperCase()} — paste palette into regions.ts ===`,
+    palette,
+    '',
+    `// fog (paste into tuner.ts DEFAULT_FOG):`,
+    formatFogLine(region, fog),
+  ].join('\n');
 }
 
 function RegionSelect({
@@ -125,8 +160,11 @@ function FogBlock({ region }: { region: RegionId }) {
 
   return (
     <div className="mb-4 rounded border border-pink-300/30 bg-violet-900/40 p-2">
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-pink-200">
-        fog
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-pink-200">
+          fog
+        </span>
+        <CopyButton getText={() => formatFogLine(region, fog)} />
       </div>
       <div className="mb-2 flex items-center gap-2">
         <input
@@ -179,8 +217,11 @@ function RoleBlock({ region, role }: { region: RegionId; role: PaletteRole }) {
 
   return (
     <div className="mb-3 rounded border border-pink-300/30 bg-violet-900/40 p-2">
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-pink-200">
-        {role}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-pink-200">
+          {role}
+        </span>
+        <CopyButton getText={() => formatStopsBlock(region, role)} />
       </div>
       <div className="flex flex-col gap-1">
         {stops.map(([t, color], i) => (
@@ -239,6 +280,93 @@ function SliderRow({
         className="block w-full accent-pink-400"
       />
     </label>
+  );
+}
+
+// Top-of-panel button: dumps EVERY palette + fog value for the
+// active region into the clipboard, prefixed with paste-ready
+// comments so the user can drop the whole block into regions.ts /
+// tuner.ts.
+function CopyAllButton({ region }: { region: RegionId }) {
+  const fog = useTuner((s) => s.fogByRegion[region]);
+  // Subscribe to paletteRevision so the snapshot reads fresh REGIONS
+  // every time the user re-clicks after edits.
+  const revision = useTuner((s) => s.paletteRevision);
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  revision;
+  return (
+    <div className="mb-3">
+      <CopyButton
+        label="copy all values"
+        getText={() => formatRegionAll(region, fog)}
+        wide
+      />
+    </div>
+  );
+}
+
+// Reusable copy-to-clipboard button. Briefly flips its label to
+// "copied!" so the user gets visible confirmation.
+function CopyButton({
+  getText,
+  label = 'copy',
+  wide = false,
+}: {
+  getText: () => string;
+  label?: string;
+  wide?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  // Auto-reset the "copied!" badge so a second click later still
+  // flips it back into action.
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 1200);
+    return () => clearTimeout(id);
+  }, [copied]);
+
+  const onClick = async () => {
+    const text = getText();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      // Fallback: select-and-copy via a temporary textarea (covers
+      // browsers / iframe contexts where clipboard API is blocked).
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+      } catch {
+        // give up silently — user can still read the panel and type.
+      }
+      document.body.removeChild(ta);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={
+        'rounded border border-pink-300/40 px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition active:scale-95 ' +
+        (copied
+          ? 'bg-emerald-700/60 text-emerald-100'
+          : 'bg-violet-800/60 text-pink-200 hover:bg-violet-700/70') +
+        (wide ? ' block w-full text-center' : '')
+      }
+    >
+      {copied ? 'copied!' : label}
+    </button>
   );
 }
 
