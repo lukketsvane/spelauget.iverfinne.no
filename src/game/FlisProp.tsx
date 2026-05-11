@@ -21,23 +21,23 @@ const KIND_CONFIG: Record<
   }
 > = {
   figure_seated: {
-    url: '/flisverden_models/flis_figure_seated.glb',
+    url: '/flisverden/flis_figure_seated.glb',
     colliderKind: 'circle',
     colliderInflate: 0.7,
   },
   vesica: {
-    url: '/flisverden_models/flis_vesica.glb',
+    url: '/flisverden/flis_vesica.glb',
     // Vesica is a flat altar — leave passable so the player can
     // walk through / over it for ritual interactions later.
     colliderKind: null,
   },
   pillar: {
-    url: '/flisverden_models/flis_pillar.glb',
+    url: '/flisverden/flis_pillar.glb',
     colliderKind: 'circle',
     colliderInflate: 0.85,
   },
   floor_tile: {
-    url: '/flisverden_models/flis_floor_tile.glb',
+    url: '/flisverden/flis_floor_tile.glb',
     // Floor tiles are walking surface — never collide.
     colliderKind: null,
   },

@@ -42,21 +42,24 @@ export default function GradientTuner() {
     setTarget(currentRegion);
   }
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        className="pointer-events-auto absolute right-4 top-1/2 z-30 -translate-y-1/2 rounded-md border border-pink-300/60 bg-violet-950/80 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-pink-200 shadow-lg active:scale-95"
-        aria-label="Open gradient tuner"
-      >
-        tune
-      </button>
-    );
-  }
+  // T toggles the tuner panel. Hidden button by design — this is a
+  // dev tool, not player UI, so it doesn't show up on screen anymore.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyT') return;
+      // Don't hijack typing in form fields (colour pickers, sliders).
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) {
+        return;
+      }
+      e.preventDefault();
+      setOpen((v) => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  if (!open) return null;
 
   return (
     <div

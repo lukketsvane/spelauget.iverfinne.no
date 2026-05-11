@@ -13,6 +13,7 @@ import PauseMenuButton from '@/hud/PauseMenuButton';
 import BlackOverlay from '@/hud/BlackOverlay';
 import TeleportOverlay from '@/hud/TeleportOverlay';
 import MenuHotkey from '@/hud/MenuHotkey';
+import TravelHotkey from '@/hud/TravelHotkey';
 import FpsOverlay from '@/hud/FpsOverlay';
 import ToastHost from '@/hud/ToastHost';
 import VoiceHost from '@/hud/VoiceHost';
@@ -74,6 +75,7 @@ export default function Game() {
       <BlackOverlay />
       <TeleportOverlay />
       <MenuHotkey />
+      <TravelHotkey />
       <FpsOverlay />
       <BackgroundMusic />
       <VoiceHost />

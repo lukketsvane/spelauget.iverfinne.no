@@ -6,7 +6,7 @@ import { useGame } from '@/store/game';
 import { useLevel } from '@/store/level';
 import { useMenu } from '@/store/menu';
 import { useSettings } from '@/store/settings';
-import { getRegion, type RegionId } from '@/game/regions';
+import type { RegionId } from '@/game/regions';
 import PixelatedImage from './PixelatedImage';
 
 // The five named worlds the player can teleport between. Listed in
@@ -37,7 +37,6 @@ export default function MainMenu() {
   const showSettings = useMenu((s) => s.showSettings);
   const hasStartedGame = useMenu((s) => s.hasStartedGame);
   const backToTitle = useMenu((s) => s.backToTitle);
-  const currentRegionId = useLevel((s) => s.currentRegionId);
 
   // "Has save" check: read whatever zustand persisted under
   // `spelauget.game` and look for a meaningful in-game state. The
@@ -82,16 +81,10 @@ export default function MainMenu() {
     startNewGame();
   };
 
-  // Fast-travel buttons: while prototyping, every chain world is
-  // accessible from the menu regardless of whether the player has
-  // walked there. Filter out the current region so the active world
-  // doesn't show as a (no-op) target. Tapping triggers the
-  // cinematic fade-relocate-fade and resumes the game in one step.
-  const travelTargets = CHAIN_REGION_IDS.filter((id) => id !== currentRegionId);
-  const handleTravel = (id: RegionId) => {
-    useLevel.getState().travel(id);
-    startGame();
-  };
+  // Fast-travel moved from the pause menu to the number keys 1..5
+  // (see TravelHotkey). The legacy travelTargets / handleTravel
+  // helpers are gone — kept the CHAIN_REGION_IDS constant available
+  // to anything else that might want to iterate the chain.
 
   const handleErase = () => {
     if (typeof window === 'undefined') return;
@@ -132,22 +125,12 @@ export default function MainMenu() {
             {/* Continue first when a save exists — that's the most
                 common returning-player action. */}
             {hasSave && <TextButton onClick={startGame}>Continue</TextButton>}
-            {/* Travel: in-game shortcut to a discovered region. Hidden
-                on the splash / title screen — Travel is a "pause and
-                jump" tool, not a save-loader, and seeing it next to
-                Continue / New Game muddles the splash's purpose. The
-                player gets it back as soon as they're in-game and
-                open the pause overlay. */}
-            {hasStartedGame && travelTargets.length > 0 && (
-              <>
-                <SectionLabel>Travel</SectionLabel>
-                {travelTargets.map((id) => (
-                  <TextButton key={id} onClick={() => handleTravel(id)}>
-                    {getRegion(id).name}
-                  </TextButton>
-                ))}
-              </>
-            )}
+            {/* Travel section removed: the in-game pause menu no
+                longer fast-travels. World shortcuts moved to the
+                1..5 number-keys (handled by TravelHotkey) so the
+                pause overlay stays focused on save / settings. The
+                map overlay is also gone — these worlds are meant to
+                be walked between via portals and the number keys. */}
             {/* New Game is destructive (wipes progress) — restrict it
                 to the splash screen so the player can't fat-finger it
                 from the in-game pause overlay. They can still wipe via
@@ -218,7 +201,8 @@ function ControlsLegend() {
     ['Move', 'WASD / Arrows / Hold mouse'],
     ['Bow', 'E or Space'],
     ['Menu', 'Q or Esc'],
-    ['Map', 'M'],
+    ['Travel', '1 Hagen · 2 Blod · 3 Flis · 4 Salt · 5 Kjeller'],
+    ['Tune', 'T'],
   ];
   return (
     <div className="rounded-md border-2 border-pink-300/60 bg-violet-950/80 px-4 py-3">

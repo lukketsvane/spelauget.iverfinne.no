@@ -15,6 +15,13 @@
 import { applyWorldScale, perimeterRing, trailCairn } from '../helpers';
 import type { Spawn } from '../types';
 
+// Folder convention: every world reads its painted-card / GLB assets
+// from /public/<this-world>/. Hagen's NPCs and scenery are shared
+// GLBs in /public/models/ (player char, NPC base meshes, scenery
+// kits), so the per-world dir here is empty for now.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const ASSET_DIR = '/hagen/';
+
 // Logical (60-radius design frame) spawn list — Hagen's NPCs, plants,
 // homestead. applyWorldScale(×2) below stretches it to runtime coords.
 const BASE_SPAWNS: Spawn[] = [

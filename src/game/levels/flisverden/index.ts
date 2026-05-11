@@ -14,6 +14,14 @@ import {
 } from '../../FlisPool';
 import type { Spawn } from '../types';
 
+// Folder convention: every world reads its painted-card / GLB assets
+// from /public/<this-world>/. Flisverden currently composes its scene
+// from procedural tile geometry + the shared giantess GLB (mounted by
+// the Giantess component), so this constant is the only place a
+// flisverden-specific painted asset would land.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const ASSET_DIR = '/flisverden/';
+
 const center = getRegion('geometri').center;
 const CX = center[0];
 const CZ = center[1];
@@ -105,6 +113,15 @@ export const FLISVERDEN_SPAWNS: Spawn[] = [
     id: 'flis.giantess.n',
     position: [POOL_CX, POOL_CZ - POOL_HALF_Z - 14],
     rotation: Math.PI,
+  },
+
+  // Portal key for Saltverden — placed near the pool's east giantess
+  // so the player walks past it while exploring the bath structure.
+  {
+    kind: 'key',
+    id: 'flis.key.siste',
+    position: [POOL_CX + POOL_HALF_X + 4, POOL_CZ],
+    opens: 'siste',
   },
 ];
 

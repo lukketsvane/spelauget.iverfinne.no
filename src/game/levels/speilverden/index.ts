@@ -10,13 +10,23 @@
 import { getRegion } from '../../regions';
 import type { Spawn } from '../types';
 
+// Folder convention: every world reads its painted-card / GLB assets
+// from /public/<this-world>/. Kjellerverden has no painted art yet —
+// the world is a single mirror plane — so this constant is just a
+// placeholder for when sprites get added.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const ASSET_DIR = '/kjellerverden/';
+
 const center = getRegion('senter').center;
 const CX = center[0];
 const CZ = center[1];
 
 export const SPEILVERDEN_SPAWNS: Spawn[] = [
-  // Mirror floor — true reflection via THREE.Reflector. Big enough
-  // that the player never sees the rim within the iso frustum.
+  // Mirror floor — true planar reflection via the custom ortho-friendly
+  // mirror in KjellerMirror.tsx. Big enough that the player never sees
+  // the rim inside the iso frustum. Intentionally the ONLY prop in
+  // Kjellerverden for now — the world is a contemplative still pool
+  // until further assets are designed.
   {
     kind: 'kjeller_mirror',
     id: 'kjeller.mirror.floor',
@@ -25,44 +35,6 @@ export const SPEILVERDEN_SPAWNS: Spawn[] = [
     depth: 240,
     color: '#ffffff',
     resolution: 1024,
-  },
-  // Floating heart-wing monument hovering high above the mirror so
-  // the player sees both the monument AND its inverted reflection in
-  // the floor — confirms the mirror is doing real planar reflection.
-  {
-    kind: 'blod_sprite',
-    id: 'kjeller.heart.monument',
-    position: [CX, CZ - 6],
-    texture: '/blod_verden/Frame 17.png',
-    height: 14,
-    yOffset: 6,
-    glow: 0.8,
-    tint: '#ffe6ff',
-    noCollide: true,
-  },
-  // A pair of moths circling at chest height — adds movement to the
-  // reflection so the mirror feels alive rather than static.
-  {
-    kind: 'blod_sprite',
-    id: 'kjeller.moth.a',
-    position: [CX - 6, CZ + 4],
-    texture: '/blod_verden/Møll 1.png',
-    height: 2.6,
-    yOffset: 3.0,
-    glow: 0.7,
-    tint: '#cce8ff',
-    noCollide: true,
-  },
-  {
-    kind: 'blod_sprite',
-    id: 'kjeller.moth.b',
-    position: [CX + 7, CZ + 2],
-    texture: '/blod_verden/Møll 1.png',
-    height: 2.4,
-    yOffset: 4.0,
-    glow: 0.7,
-    tint: '#d8dcff',
-    noCollide: true,
   },
 ];
 

@@ -24,11 +24,11 @@ export default function HUD() {
   if (hasKey || keys.length > 0) {
     items.push({
       id: 'key',
-      // The digger's key is rendered via the blod_verden key tile —
+      // The digger's key is rendered via the flisverden key tile —
       // it's the same physical object the player carries through
       // every portal in the chain. URL-encoded ø so the path works
       // when the dev server serves it as static.
-      src: '/blod_verden/flis_n%C3%B8kkel.png',
+      src: '/flisverden/flis_n%C3%B8kkel.png',
       count: keys.length > 1 ? keys.length : undefined,
     });
   }
