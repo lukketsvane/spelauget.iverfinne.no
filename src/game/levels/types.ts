@@ -121,7 +121,8 @@ export type SceneryKind =
   | 'purple_coral'
   | 'purple_coral_alt'
   | 'purple_stone_cairn'
-  | 'tangled_root_sculpture';
+  | 'tangled_root_sculpture'
+  | 'mythical_horse';
 
 export type ScenerySpawn = {
   kind: SceneryKind;

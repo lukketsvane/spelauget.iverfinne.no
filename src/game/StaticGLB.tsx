@@ -11,7 +11,8 @@ export type StaticGLBKind =
   | 'purple_coral'
   | 'purple_coral_alt'
   | 'purple_stone_cairn'
-  | 'tangled_root_sculpture';
+  | 'tangled_root_sculpture'
+  | 'mythical_horse';
 
 // Per-kind tweaks for material tint + collider behaviour. Keeping
 // these here (rather than in levels.ts) so a level designer dropping
@@ -79,6 +80,17 @@ const KIND_CONFIG: Record<
     emissiveIntensity: 0.4,
     colliderKind: 'circle',
     colliderInflate: 0.65,
+  },
+  mythical_horse: {
+    url: '/models/mythical_horse.glb',
+    // Bone-pink with a strong emissive so the figure reads as
+    // luminous against Blodverden's deep red atmosphere — same tonal
+    // family as the painted blod_hest card it replaces.
+    color: '#f0c8c8',
+    emissive: '#7a3838',
+    emissiveIntensity: 0.45,
+    colliderKind: 'box',
+    colliderInflate: 0.85,
   },
 };
 

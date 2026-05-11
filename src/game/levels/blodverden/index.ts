@@ -43,6 +43,18 @@ export const BLODVERDEN_SPAWNS: Spawn[] = [
     tint: '#ffffff',
   },
 
+  // -- Mythical horse GLB to the south-east of the monument. Picks
+  //    up the BLOD_RELIC gradient via StaticGLB's MeshLambertMaterial,
+  //    so it reads as bone-pink against the red atmosphere instead of
+  //    a flat painted card. --
+  {
+    kind: 'mythical_horse',
+    id: 'blod.horse.center',
+    position: [CX + 12, CZ + 8],
+    scale: 5.0,
+    rotation: -Math.PI / 6,
+  },
+
   // -- Skeletal antler-plants scattered as ground flora. All face the
   //    iso camera flat (rotationOffset = 0) so the painted silhouette
   //    reads cleanly without slanted edges. tint pulls them toward the

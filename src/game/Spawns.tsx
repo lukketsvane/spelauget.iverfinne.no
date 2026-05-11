@@ -174,6 +174,7 @@ export default function Spawns({ playerPosRef }: Props) {
           case 'purple_coral_alt':
           case 'purple_stone_cairn':
           case 'tangled_root_sculpture':
+          case 'mythical_horse':
             return (
               <StaticGLB
                 key={s.id}
