@@ -22,9 +22,16 @@ type TunerState = {
 // REGION_ATMOS map. Scene.tsx now reads from useTuner.fogByRegion
 // instead so the tuner panel can drive fog live without a code edit.
 const DEFAULT_FOG: Record<RegionId, FogConfig> = {
-  lysningen: { color: '#1a1230', near: 40, far: 95 },
-  blod: { color: '#a01828', near: 8, far: 38 },
-  geometri: { color: '#0a3a26', near: 32, far: 90 },
+  // Hagen: tighter near plane (15) so the spawn area immediately
+  // reads with atmosphere; long far (200) keeps distant trail
+  // markers readable instead of vanishing into a wall of fog.
+  lysningen: { color: '#1a1230', near: 15, far: 200 },
+  blod: { color: '#a01828', near: 14, far: 48 },
+  // Flisverden: rosé-cyan haze. Far 200 + near 120 means fog
+  // doesn't kick in until the player is far from props, so the
+  // immediate scene reads as a clean luminous corridor. Distant
+  // edges still soften into the pink wash.
+  geometri: { color: '#d8a8d4', near: 120, far: 200 },
   siste: { color: '#1a2c3c', near: 38, far: 100 },
   senter: { color: '#241040', near: 30, far: 88 },
   remnants: { color: '#1a1230', near: 40, far: 95 },

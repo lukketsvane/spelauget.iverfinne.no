@@ -7,6 +7,7 @@ import { useLevel } from '@/store/level';
 import { useMenu } from '@/store/menu';
 import { useSettings } from '@/store/settings';
 import { getRegion, type RegionId } from '@/game/regions';
+import PixelatedImage from './PixelatedImage';
 
 // The five named worlds the player can teleport between. Listed in
 // chain order so the menu reads as "the journey" top-to-bottom. The
@@ -113,14 +114,15 @@ export default function MainMenu() {
     >
       {/* Splash background — only on the very first visit, before the
           player has ever entered the game. After that the menu is a
-          pause overlay and we want the canvas to show through. */}
+          pause overlay and we want the canvas to show through.
+          Routed through PixelatedImage so the splash matches the
+          chunky 0.45-DPR look of the in-game canvas instead of
+          rendering smooth at native resolution. */}
       {!hasStartedGame && (
-        <img
+        <PixelatedImage
           src="/menu/menu_screen.png"
-          alt=""
-          className="absolute inset-0 -z-10 h-full w-full object-cover"
-          style={{ imageRendering: 'pixelated' }}
-          aria-hidden
+          alt="Title screen"
+          className="absolute inset-0 -z-10 h-full w-full"
         />
       )}
 

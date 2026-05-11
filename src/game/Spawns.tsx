@@ -20,7 +20,11 @@ import Crystal from './Crystal';
 import CrystalAltar from './CrystalAltar';
 import Key from './Key';
 import Artifact from './Artifact';
+import FlisProp from './FlisProp';
 import SkateNpc from './SkateNpc';
+import Giantess from './Giantess';
+import FlisPool from './FlisPool';
+import FlisFloor from './FlisFloor';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -218,6 +222,17 @@ export default function Spawns({ playerPosRef }: Props) {
                 playerPosRef={playerPosRef}
               />
             );
+          case 'flis_prop':
+            return (
+              <FlisProp
+                key={s.id}
+                id={s.id}
+                prop={s.prop}
+                position={[s.position[0], 0, s.position[1]]}
+                scale={s.scale}
+                rotationY={s.rotation}
+              />
+            );
           case 'skate':
             return (
               <SkateNpc
@@ -229,6 +244,40 @@ export default function Spawns({ playerPosRef }: Props) {
                 period={s.period}
                 scale={s.scale}
                 phase={s.phase}
+              />
+            );
+          case 'giantess':
+            return (
+              <Giantess
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], s.yOffset ?? 0, s.position[1]]}
+                scale={s.scale}
+                rotationY={s.rotation}
+                color={s.color}
+                emissive={s.emissive}
+                emissiveIntensity={s.emissiveIntensity}
+              />
+            );
+          case 'flis_pool':
+            return (
+              <FlisPool
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                rotationY={s.rotation}
+                scale={s.scale}
+              />
+            );
+          case 'flis_floor':
+            return (
+              <FlisFloor
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                width={s.width}
+                depth={s.depth}
+                tileSize={s.tileSize}
               />
             );
           default:

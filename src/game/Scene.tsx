@@ -55,6 +55,10 @@ export default function Scene() {
 
   const setCamera = useInput((s) => s.setCamera);
   const setCanvasEl = useInput((s) => s.setCanvasEl);
+  // Read the active region up front so the camera frustum effect
+  // below can scale its ortho zoom per world (Flisverden runs at 5×
+  // scale and needs a much wider view than Hagen does).
+  const regionId = useLevel((s) => s.currentRegionId);
   useEffect(() => {
     setCanvasEl(gl.domElement);
     return () => setCanvasEl(null);
@@ -84,7 +88,6 @@ export default function Scene() {
   // them. Recomputed when the active region's spawn list changes so
   // a brand-new empty world doesn't carry over Hagen's exclusion
   // bubbles.
-  const regionId = useLevel((s) => s.currentRegionId);
   const plantExclusions = useMemo(() => {
     const spawns = WORLD_SPAWNS[regionId] ?? [];
     return spawns

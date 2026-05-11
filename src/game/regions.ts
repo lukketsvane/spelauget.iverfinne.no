@@ -60,8 +60,12 @@ const LYSNINGEN_GROUND: Stop[] = [
   [1.0, '#e8f4ff'],
 ];
 const LYSNINGEN_PLANT: Stop[] = [
+  // Pink injection at the mid-low band — Hagen plants now lift to a
+  // hot magenta highlight before settling into the sky-blue ramp.
+  // Reads as "luminous flora against the azure clearing" rather
+  // than monochrome blue. Tuned via the dev gradient panel.
   [0.0, '#1a3e7a'],
-  [0.3, '#3a8ce4'],
+  [0.3, '#f78cf1'],
   [0.55, '#62b8ff'],
   [0.8, '#bce0ff'],
   [1.0, '#f0f8ff'],
@@ -116,90 +120,85 @@ const REMNANT_RELIC: Stop[] = [
   [1.0, '#f4f4f4'],
 ];
 
-// --- Blodverden — drowned in red, every surface bathed in blood light
-// Ground textures sample mostly mid-luminance (~0.4–0.7), so the
-// dominant red band MUST live there — not at the brightest end.
-// Shifts: 0.0 stays pitch-black for deep shadow only, but red lifts
-// fast and stays saturated through the whole mid-band. Pink-white
-// only at the absolute brightest highlight. This matches the
-// reference where almost everything reads as red, with black only
-// in voids and pink only on lit edges.
+// --- Blodverden — tuned via dev panel ---------------------------------
+// Ground floor lifted off pure black to a warm dusty rose (#7b4c4c),
+// dipping to deep red mid-low and exploding into pink-cream at the
+// top. Plants intentionally break the monochrome with sour green +
+// gold at mid-band and a cool blue-violet at the brightest stop —
+// reads as flora that aren't FROM this red world. Halo is mostly
+// black-red with one near-white blue tip for cold star-light. Relic
+// silhouettes are bone / pale rose so figures stand out as lit
+// from within against the bloody air.
 const BLOD_GROUND: Stop[] = [
-  [0.0, '#000000'],
+  [0.0, '#7b4c4c'],
   [0.18, '#3a0408'],
-  [0.38, '#9c1018'],
+  [0.38, '#d7333b'],
   [0.58, '#dc1c2c'],
   [0.78, '#ff4858'],
   [0.92, '#ffa0ac'],
   [1.0, '#ffe0e4'],
 ];
 const BLOD_PLANT: Stop[] = [
-  [0.0, '#000000'],
-  [0.2, '#380408'],
-  [0.4, '#9a1018'],
+  [0.0, '#a63030'],
+  [0.2, '#1a7429'],
+  [0.4, '#987b10'],
   [0.6, '#d4202c'],
   [0.8, '#ff5060'],
-  [1.0, '#ffd4d8'],
+  [1.0, '#6166ff'],
 ];
 const BLOD_HALO: Stop[] = [
-  // Halo lifts off black sooner so the air itself glows red — the
-  // chamber is filled with blood light, not just spot-lit. Top
-  // burst into pink remains for hot rim highlights on close props.
-  [0.0, '#000000'],
-  [0.4, '#1a0204'],
+  [0.0, '#8e5252'],
+  [0.4, '#a3000e'],
   [0.6, '#6a0814'],
   [0.78, '#c8202c'],
   [0.92, '#ff6878'],
-  [1.0, '#ffd0d6'],
+  [1.0, '#d1e7ff'],
 ];
 const BLOD_RELIC: Stop[] = [
-  // Remnant silhouettes: black core for the deepest shadow lines
-  // but bright saturated red across most of the painted figure so
-  // the silhouettes don't read as flat-black holes.
-  [0.0, '#000000'],
-  [0.2, '#3c0408'],
-  [0.4, '#a01020'],
-  [0.6, '#e02030'],
-  [0.78, '#ff5868'],
-  [1.0, '#ffc4cc'],
+  [0.0, '#ac8b8b'],
+  [0.2, '#c6b3b3'],
+  [0.4, '#ffe1db'],
+  [0.6, '#ffffff'],
+  [0.78, '#ffffff'],
+  [1.0, '#ffffff'],
 ];
 
-// --- Flisverden — luminous mint / jade green, very bright ------------
-// Brighter pass: even the darkest stop is a clearly-green mid-jade
-// instead of near-black, and the halo lifts off black entirely so
-// the air reads as glowing rather than lit-from-elsewhere. The
-// brightest stops push to near-pure white for a snow-on-grass
-// "luminous floor" feel.
+// --- Flisverden — tuned via dev panel --------------------------------
+// Same pink/baby-cyan family as before, but the dark stops are now
+// LIFTED off near-black to bright/pale colours: ground 0.0 starts
+// at near-cream pink, halo 0.0 starts at baby-cyan, relic 0.0 sits
+// at pale lavender-pink. The whole region reads as luminous and
+// airy — no shadow corners, just shifting pastels.
 const GEOMETRI_GROUND: Stop[] = [
-  [0.0, '#1a5a40'],
-  [0.3, '#3cb478'],
-  [0.6, '#7af0b8'],
-  [0.85, '#d0fbe4'],
-  [1.0, '#fafffa'],
+  [0.0, '#fff0f0'],
+  [0.25, '#65aeb3'],
+  [0.55, '#7ed4d0'],
+  [0.78, '#c8f0e8'],
+  [0.92, '#f4c8e0'],
+  [1.0, '#fff0f4'],
 ];
 const GEOMETRI_PLANT: Stop[] = [
-  [0.0, '#1a4e34'],
-  [0.3, '#3aa86a'],
-  [0.6, '#74e6a8'],
-  [0.85, '#caf4dc'],
-  [1.0, '#fafffa'],
+  [0.0, '#ffffff'],
+  [0.25, '#a8408c'],
+  [0.5, '#e670b0'],
+  [0.75, '#fab8d4'],
+  [1.0, '#fff0f4'],
 ];
 const GEOMETRI_HALO: Stop[] = [
-  // No more pure black at the bottom — even the darkest air carries
-  // a faint jade glow so the world never goes dim.
-  [0.0, '#06241a'],
-  [0.35, '#1c6a48'],
-  [0.6, '#48c888'],
-  [0.78, '#94f0c0'],
-  [0.92, '#dafce8'],
-  [1.0, '#f8fffa'],
+  [0.0, '#7ed6d7'],
+  [0.4, '#94bdff'],
+  [0.6, '#84c8d8'],
+  [0.78, '#d8a8d4'],
+  [0.92, '#f4d4e8'],
+  [1.0, '#fff4fa'],
 ];
 const GEOMETRI_RELIC: Stop[] = [
-  [0.0, '#1a4e36'],
-  [0.25, '#34a070'],
-  [0.5, '#74e8aa'],
-  [0.75, '#c4f6dc'],
-  [1.0, '#f8fffa'],
+  [0.0, '#ffd6fc'],
+  [0.25, '#a04088'],
+  [0.5, '#e670b0'],
+  [0.75, '#fab8d4'],
+  [0.92, '#ffe4f0'],
+  [1.0, '#fffafc'],
 ];
 
 // --- Saltverden — bright snow-white / cool silver --------------------

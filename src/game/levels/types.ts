@@ -166,6 +166,23 @@ export type ArtifactSpawn = {
   region: RegionId;
 };
 
+// Flisverden block-out asset. Loads one of the four GLB blueprints
+// exported from Blender (`/flisverden_models/flis_<kind>.glb`) and
+// places it at world coords. Registers a mesh-derived collider so
+// the player walks around the silhouette, except for `tile` which
+// is the flat ground plane (passable).
+export type FlisPropKind = 'figure_seated' | 'vesica' | 'pillar' | 'floor_tile';
+export type FlisPropSpawn = {
+  kind: 'flis_prop';
+  id: string;
+  position: [number, number];
+  // Which exported asset to load. Maps 1:1 to a file in
+  // /public/flisverden_models/.
+  prop: FlisPropKind;
+  scale?: number;
+  rotation?: number;
+};
+
 // Stingray-style ambient creature that orbits a fixed world-space
 // centre on a horizontal circle. Pure decoration — no collision,
 // dialogue, or interaction.
@@ -178,6 +195,47 @@ export type SkateSpawn = {
   period: number;
   scale?: number;
   phase?: number;
+};
+
+// Hot-pink monumental figure (giantess_squat.glb) — sits/squats around
+// scenery. Pure prop with a circle collider so the player walks around
+// its silhouette. `yOffset` perches the figure on top of a raised
+// structure (e.g. the pool deck), since the world is otherwise flat
+// and the spawn position is XZ only.
+export type GiantessSpawn = {
+  kind: 'giantess';
+  id: string;
+  position: [number, number];
+  yOffset?: number;
+  scale?: number;
+  rotation?: number;
+  color?: string;
+  emissive?: string;
+  emissiveIntensity?: number;
+};
+
+// Composite swimming-pool prop: U-shaped tile-cube wall around a
+// recessed water basin. Single spawn = whole assembly. Rotation pivots
+// the open south side to wherever the level designer wants the player
+// to enter.
+export type FlisPoolSpawn = {
+  kind: 'flis_pool';
+  id: string;
+  position: [number, number];
+  rotation?: number;
+  scale?: number;
+};
+
+// Flat tile-textured deck plane — drop one (or several) into a world
+// to pave the ground around the pool with the same wet ceramic tiles.
+// No collider; it's a visual surface only.
+export type FlisFloorSpawn = {
+  kind: 'flis_floor';
+  id: string;
+  position: [number, number];
+  width: number;
+  depth: number;
+  tileSize?: number;
 };
 
 export type Spawn =
@@ -196,7 +254,11 @@ export type Spawn =
   | CrystalAltarSpawn
   | KeySpawn
   | ArtifactSpawn
-  | SkateSpawn;
+  | FlisPropSpawn
+  | SkateSpawn
+  | GiantessSpawn
+  | FlisPoolSpawn
+  | FlisFloorSpawn;
 
 export type LevelDefinition = {
   id: LevelId;
