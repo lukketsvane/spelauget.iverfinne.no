@@ -26,6 +26,7 @@ import Giantess from './Giantess';
 import FlisPool from './FlisPool';
 import FlisFloor from './FlisFloor';
 import BlodSprite from './BlodSprite';
+import KjellerMirror from './KjellerMirror';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
@@ -295,6 +296,18 @@ export default function Spawns({ playerPosRef }: Props) {
                 yOffset={s.yOffset}
                 glow={s.glow}
                 tint={s.tint}
+              />
+            );
+          case 'kjeller_mirror':
+            return (
+              <KjellerMirror
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0.02, s.position[1]]}
+                width={s.width}
+                depth={s.depth}
+                color={s.color}
+                resolution={s.resolution}
               />
             );
           default:

@@ -244,6 +244,19 @@ export type BlodSpriteSpawn = {
   tint?: string;
 };
 
+// Perfect-mirror floor plane for Kjellerverden. Uses THREE.Reflector
+// to render the scene from the mirrored viewpoint into a texture and
+// sample it on the plane — a true mirror, not an env map fake.
+export type KjellerMirrorSpawn = {
+  kind: 'kjeller_mirror';
+  id: string;
+  position: [number, number];
+  width?: number;
+  depth?: number;
+  color?: string;
+  resolution?: number;
+};
+
 // Flat tile-textured deck plane — drop one (or several) into a world
 // to pave the ground around the pool with the same wet ceramic tiles.
 // No collider; it's a visual surface only.
@@ -277,7 +290,8 @@ export type Spawn =
   | GiantessSpawn
   | FlisPoolSpawn
   | FlisFloorSpawn
-  | BlodSpriteSpawn;
+  | BlodSpriteSpawn
+  | KjellerMirrorSpawn;
 
 export type LevelDefinition = {
   id: LevelId;

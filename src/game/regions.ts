@@ -353,7 +353,7 @@ export const REGIONS: RegionDef[] = [
   },
   {
     id: 'senter',
-    name: 'Fragleverden',
+    name: 'Kjellerverden',
     center: [90, 70],
     sigma: 22,
     palette: {
