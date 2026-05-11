@@ -1,0 +1,416 @@
+{
+  "spawnPoint": {
+    "x": -90,
+    "z": -32
+  },
+  "spawns": [
+    {
+      "kind": "blod_sprite",
+      "id": "blod.heart.center",
+      "position": [
+        -90,
+        -50
+      ],
+      "texture": "/blodverden/heart-wing.png",
+      "height": 22,
+      "glow": 1,
+      "tint": "#ffffff"
+    },
+    {
+      "kind": "mythical_horse",
+      "id": "blod.horse.center",
+      "position": [
+        -78,
+        -42
+      ],
+      "scale": 10,
+      "rotation": -0.5235987755982988
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.a",
+      "position": [
+        -100,
+        -54
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.4,
+      "tint": "#e8b8b8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.b",
+      "position": [
+        -78,
+        -58
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.6,
+      "tint": "#f0c0c0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.c",
+      "position": [
+        -106,
+        -46
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.2,
+      "tint": "#e0a8a8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.d",
+      "position": [
+        -72,
+        -44
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.8,
+      "tint": "#ecb4b4",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.e",
+      "position": [
+        -96,
+        -34
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.1,
+      "tint": "#d8a0a0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.f",
+      "position": [
+        -86,
+        -68
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.4,
+      "tint": "#e8b0b0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.g",
+      "position": [
+        -110,
+        -62
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.6,
+      "tint": "#f0bcbc",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.h",
+      "position": [
+        -74,
+        -72
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.5,
+      "tint": "#dcacac",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.i",
+      "position": [
+        -94,
+        -62
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2,
+      "tint": "#e4acac",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.j",
+      "position": [
+        -82,
+        -36
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.3,
+      "tint": "#e8b4b4",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.k",
+      "position": [
+        -120,
+        -54
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.7,
+      "tint": "#f0c4c4",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.l",
+      "position": [
+        -62,
+        -52
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.5,
+      "tint": "#e4b0b0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.m",
+      "position": [
+        -116,
+        -32
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.4,
+      "tint": "#d8a4a4",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.n",
+      "position": [
+        -66,
+        -28
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.8,
+      "tint": "#f0c8c8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.o",
+      "position": [
+        -124,
+        -40
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.2,
+      "tint": "#e0a8a8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.p",
+      "position": [
+        -58,
+        -38
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.6,
+      "tint": "#ecb4b4",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.q",
+      "position": [
+        -104,
+        -24
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.3,
+      "tint": "#d8a0a0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.r",
+      "position": [
+        -76,
+        -22
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.5,
+      "tint": "#e8b8b8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.s",
+      "position": [
+        -98,
+        -78
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.4,
+      "tint": "#e4acac",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.t",
+      "position": [
+        -68,
+        -64
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.7,
+      "tint": "#f0bcbc",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.u",
+      "position": [
+        -112,
+        -72
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.5,
+      "tint": "#dcacac",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.v",
+      "position": [
+        -84,
+        -18
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.3,
+      "tint": "#e8b0b0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.w",
+      "position": [
+        -102,
+        -40
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.1,
+      "tint": "#d4a0a0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.x",
+      "position": [
+        -80,
+        -78
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.6,
+      "tint": "#ecb8b8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.y",
+      "position": [
+        -108,
+        -48
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.2,
+      "tint": "#e0a8a8",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.plant.z",
+      "position": [
+        -72,
+        -40
+      ],
+      "texture": "/blodverden/antler-plant.png",
+      "height": 2.4,
+      "tint": "#e4b0b0",
+      "glow": 0.7
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.moth.center",
+      "position": [
+        -84,
+        -56
+      ],
+      "texture": "/blodverden/moth.png",
+      "height": 3.4,
+      "yOffset": 4,
+      "glow": 1,
+      "tint": "#e0f2ff",
+      "noCollide": true
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.moth.west",
+      "position": [
+        -102,
+        -48
+      ],
+      "texture": "/blodverden/moth.png",
+      "height": 2.8,
+      "yOffset": 5,
+      "glow": 1,
+      "tint": "#d4e8ff",
+      "noCollide": true
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.moth.south",
+      "position": [
+        -88,
+        -40
+      ],
+      "texture": "/blodverden/moth.png",
+      "height": 3,
+      "yOffset": 3.5,
+      "glow": 1,
+      "tint": "#e8f4ff",
+      "noCollide": true
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.portal.north",
+      "position": [
+        -90,
+        -72
+      ],
+      "texture": "/blodverden/gothic-arch.png",
+      "height": 11,
+      "glow": 1
+    },
+    {
+      "kind": "blod_sprite",
+      "id": "blod.portal.flis",
+      "position": [
+        -112,
+        -46
+      ],
+      "texture": "/blodverden/butterfly-portal.png",
+      "height": 9,
+      "glow": 0.9,
+      "tint": "#ffe8d8"
+    },
+    {
+      "kind": "key",
+      "id": "blod.key.geometri",
+      "position": [
+        -78,
+        -46
+      ],
+      "opens": "geometri"
+    }
+  ]
+}

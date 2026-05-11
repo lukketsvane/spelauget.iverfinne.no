@@ -18,7 +18,7 @@ const PLANT_SOURCES = [
   { url: '/plante_02.png', height: 3.0, wind: 0.6, pushable: true },
   { url: '/plante_03.png', height: 4.2, wind: 0.2, pushable: false },
   { url: '/plante_04.png', height: 4.0, wind: 0.35, pushable: false },
-  { url: '/plante._01.png', height: 2.2, wind: 0.8, pushable: true },
+  { url: '/plante_01.png', height: 2.2, wind: 0.8, pushable: true },
 ] as const;
 
 const FACE_CAMERA_Y = Math.PI / 4;

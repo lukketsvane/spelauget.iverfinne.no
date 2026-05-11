@@ -133,6 +133,46 @@ export default function Scene() {
         return { x: s.position[0], z: s.position[1], r };
       });
   }, [regionId]);
+  // Procedural environment map for PBR / chrome materials. Drei's
+  // <Environment preset> fetches an HDR from a CDN which (a) is
+  // network-dependent and (b) hung the renderer in this build, so we
+  // bake a tiny equirectangular gradient into a PMREM env map at
+  // mount — gives the chrome horse statue a usable sky to reflect.
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    // Tiny equirectangular gradient: warm horizon → cool zenith,
+    // mirrored top/bottom. 64×32 is plenty for diffuse / low-rough
+    // PBR look-up after PMREM blur.
+    const W = 64;
+    const H = 32;
+    const data = new Float32Array(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      const t = y / (H - 1);
+      // Vertical gradient: pinkish horizon to deep violet sky.
+      const r = THREE.MathUtils.lerp(0.55, 0.18, t);
+      const g = THREE.MathUtils.lerp(0.32, 0.16, t);
+      const b = THREE.MathUtils.lerp(0.42, 0.36, t);
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 4;
+        data[i + 0] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = 1;
+      }
+    }
+    const equirect = new THREE.DataTexture(data, W, H, THREE.RGBAFormat, THREE.FloatType);
+    equirect.mapping = THREE.EquirectangularReflectionMapping;
+    equirect.needsUpdate = true;
+    const envRt = pmrem.fromEquirectangular(equirect);
+    scene.environment = envRt.texture;
+    equirect.dispose();
+    pmrem.dispose();
+    return () => {
+      envRt.dispose();
+      if (scene.environment === envRt.texture) scene.environment = null;
+    };
+  }, [gl, scene]);
+
   // Build the four region-blended 2D gradient textures once at mount;
   // every gradient-mapped surface samples them via the registry. The
   // textures are immutable for the lifetime of the world (palettes

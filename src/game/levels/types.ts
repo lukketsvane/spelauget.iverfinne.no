@@ -227,7 +227,7 @@ export type FlisPoolSpawn = {
   scale?: number;
 };
 
-// Painted-card sprite for the blod_verden asset family. Source PNG has
+// Painted-card sprite for the blodverden asset family. Source PNG has
 // a black background that the shader maps to alpha; the silhouette /
 // coloured shape is preserved verbatim. Use for plants, creatures,
 // moths, portals, monuments — anything 2D in Blodverden.

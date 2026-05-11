@@ -1,0 +1,20 @@
+{
+  "spawnPoint": {
+    "x": 90,
+    "z": 70
+  },
+  "spawns": [
+    {
+      "kind": "kjeller_mirror",
+      "id": "kjeller.mirror.floor",
+      "position": [
+        90,
+        70
+      ],
+      "width": 240,
+      "depth": 240,
+      "color": "#ffffff",
+      "resolution": 1024
+    }
+  ]
+}

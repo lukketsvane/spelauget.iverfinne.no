@@ -1,0 +1,96 @@
+{
+  "spawnPoint": {
+    "x": -90,
+    "z": 74
+  },
+  "spawns": [
+    {
+      "kind": "flis_floor",
+      "id": "flis.floor.north",
+      "position": [
+        -90,
+        -3
+      ],
+      "width": 220,
+      "depth": 94,
+      "tileSize": 8
+    },
+    {
+      "kind": "flis_floor",
+      "id": "flis.floor.south",
+      "position": [
+        -90,
+        119
+      ],
+      "width": 220,
+      "depth": 102,
+      "tileSize": 8
+    },
+    {
+      "kind": "flis_floor",
+      "id": "flis.floor.east",
+      "position": [
+        -21,
+        56
+      ],
+      "width": 82,
+      "depth": 24,
+      "tileSize": 8
+    },
+    {
+      "kind": "flis_floor",
+      "id": "flis.floor.west",
+      "position": [
+        -159,
+        56
+      ],
+      "width": 82,
+      "depth": 24,
+      "tileSize": 8
+    },
+    {
+      "kind": "flis_pool",
+      "id": "flis.pool.main",
+      "position": [
+        -90,
+        56
+      ]
+    },
+    {
+      "kind": "giantess",
+      "id": "flis.giantess.nw",
+      "position": [
+        -128,
+        40
+      ],
+      "rotation": -0.7853981633974483
+    },
+    {
+      "kind": "giantess",
+      "id": "flis.giantess.ne",
+      "position": [
+        -52,
+        40
+      ],
+      "rotation": 3.9269908169872414
+    },
+    {
+      "kind": "giantess",
+      "id": "flis.giantess.n",
+      "position": [
+        -90,
+        30
+      ],
+      "rotation": 3.141592653589793
+    },
+    {
+      "kind": "key",
+      "id": "flis.key.siste",
+      "position": [
+        -58,
+        56
+      ],
+      "opens": "siste"
+    }
+  ]
+}

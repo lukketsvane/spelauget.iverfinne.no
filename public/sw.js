@@ -37,7 +37,6 @@ const PRECACHE = [
   '/plante_02.png',
   '/plante_03.png',
   '/plante_04.png',
-  '/plante._01.png',
   '/ny_bakke_01.png',
   '/ny_bakke_02.png',
   '/ny_bakke_03.png',

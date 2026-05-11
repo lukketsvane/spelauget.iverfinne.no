@@ -119,11 +119,23 @@ export default function StaticGLB({ kindName, id, position, scale = 1, rotationY
 
   const cloned = useMemo(() => {
     const c = scene.clone(true);
-    const mat = new THREE.MeshLambertMaterial({
-      color: cfg.color,
-      emissive: new THREE.Color(cfg.emissive),
-      emissiveIntensity: cfg.emissiveIntensity,
-    });
+    // mythical_horse gets a CHROME PBR material — fully metallic,
+    // mirror-smooth, so it reads as a polished statue mirroring the
+    // sky and surroundings. Every other kind keeps the matte Lambert
+    // material for day-cycle lighting.
+    const mat: THREE.Material =
+      kindName === 'mythical_horse'
+        ? new THREE.MeshStandardMaterial({
+            color: '#ffffff',
+            metalness: 1.0,
+            roughness: 0.05,
+            envMapIntensity: 1.4,
+          })
+        : new THREE.MeshLambertMaterial({
+            color: cfg.color,
+            emissive: new THREE.Color(cfg.emissive),
+            emissiveIntensity: cfg.emissiveIntensity,
+          });
     c.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh;

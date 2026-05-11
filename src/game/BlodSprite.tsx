@@ -36,7 +36,7 @@ type Props = {
   tint?: string;
 };
 
-// Painted-card sprite for the blod_verden asset family. Source PNGs
+// Painted-card sprite for the blodverden asset family. Source PNGs
 // have BLACK backgrounds with light silhouettes / coloured shapes;
 // the shader patch maps luminance → alpha so the silhouette comes
 // through and the black plate vanishes. RGB is preserved (no gradient

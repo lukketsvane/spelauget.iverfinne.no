@@ -1,0 +1,17 @@
+{
+  "spawnPoint": {
+    "x": 90,
+    "z": -50
+  },
+  "spawns": [
+    {
+      "kind": "key",
+      "id": "salt.key.senter",
+      "position": [
+        94,
+        -48
+      ],
+      "opens": "senter"
+    }
+  ]
+}
