@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const URL = '/models/skate.glb';
 const FADE = 0.25;
@@ -43,11 +44,14 @@ export default function SkateNpc({
 }: Props) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(URL);
-  // Clone the scene so multiple skates don't share one mesh — drei's
-  // useGLTF caches the parsed glTF, and reusing the same object tree
-  // for multiple <primitive> nodes desyncs their bone matrices.
-  const clonedScene = useMemo(() => scene.clone(true), [scene]);
-  const { actions, mixer } = useAnimations(animations, group);
+  // Clone via SkeletonUtils so the cloned SkinnedMesh's `bones[]`
+  // array points at the CLONED bones rather than the original tree.
+  // Plain `scene.clone(true)` only deep-clones the object hierarchy
+  // and leaves bone references dangling, which makes the mixer animate
+  // ghost bones while the visible mesh stays frozen — the swim cycle
+  // silently does nothing.
+  const clonedScene = useMemo(() => cloneSkinned(scene), [scene]);
+  const { actions } = useAnimations(animations, clonedScene);
 
   // Mount: configure shadows, then start the longest clip on a loop.
   useEffect(() => {
