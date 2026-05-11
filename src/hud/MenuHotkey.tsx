@@ -6,10 +6,10 @@ import { useMenu } from '@/store/menu';
 // Desktop hotkeys:
 //   Q or Esc  — toggle between gameplay and the pause overlay; also
 //               backs out of the settings panel without closing the
-//               menu entirely, and dismisses the map if it's open.
-//   M         — toggle the reference map overlay. Pressing it while
-//               the menu is open closes the menu and shows the map
-//               instead (mutually exclusive overlays).
+//               menu entirely.
+//
+// (M-key map toggle was removed when the map overlay was unmounted —
+// the overlay store fields are still present but inert.)
 //
 // All keys are no-ops on the splash menu (before the player has
 // pressed New Game / Continue) so a stray Esc on the splash doesn't
@@ -18,8 +18,7 @@ export default function MenuHotkey() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const isMenuKey = e.code === 'KeyQ' || e.code === 'Escape';
-      const isMapKey = e.code === 'KeyM';
-      if (!isMenuKey && !isMapKey) return;
+      if (!isMenuKey) return;
       // Don't hijack typing in form fields (settings sliders can
       // receive focus on tab navigation).
       const target = e.target as HTMLElement | null;
@@ -30,32 +29,14 @@ export default function MenuHotkey() {
       if (!m.hasStartedGame) return;
       e.preventDefault();
 
-      if (isMenuKey) {
-        // Map open? Close that first — Esc/Q is the universal
-        // "dismiss the topmost overlay" key.
-        if (m.showMap) {
-          m.closeMap();
-          return;
-        }
-        if (m.showSettings) {
-          m.closeSettings();
-          return;
-        }
-        if (m.inGame) {
-          m.backToMenu();
-        } else {
-          m.startGame();
-        }
+      if (m.showSettings) {
+        m.closeSettings();
         return;
       }
-
-      // Map key: toggle map. Closes the menu first if it's up so the
-      // map and the pause overlay don't stack.
-      if (m.showMap) {
-        m.closeMap();
+      if (m.inGame) {
+        m.backToMenu();
       } else {
-        if (!m.inGame) m.startGame();
-        m.openMap();
+        m.startGame();
       }
     };
     window.addEventListener('keydown', onKey);

@@ -1,9 +1,12 @@
 import * as THREE from 'three';
 import {
+  makeRegionGradientTexture,
   REGION_COUNT,
+  REGIONS,
   regionCenters,
   regionSigmas,
   type PaletteRole,
+  type RegionId,
 } from './regions';
 
 // Photoshop-style gradient map: each stop is [position 0..1, hex color].
@@ -60,6 +63,30 @@ export function setGradientTexture(role: GradientRole, texture: THREE.Texture) {
 
 export function getGradientTexture(role: GradientRole): THREE.Texture | undefined {
   return roleTextures[role];
+}
+
+// Dev-tuner entry point. Mutates the REGIONS array in place so a
+// single region's palette changes for `role`, then rebuilds the
+// shared role texture and re-points every patched material at it.
+// Old texture is disposed to free GPU memory.
+export function mutateRegionStops(
+  regionId: RegionId,
+  role: PaletteRole,
+  stops: Stop[],
+) {
+  const region = REGIONS.find((r) => r.id === regionId);
+  if (!region) return;
+  region.palette[role] = stops;
+  const next = makeRegionGradientTexture(role);
+  const prev = roleTextures[role];
+  setGradientTexture(role, next);
+  if (prev && prev !== next) prev.dispose();
+}
+
+// Read-only accessor for the tuner UI to seed its color pickers.
+export function getRegionStops(regionId: RegionId, role: PaletteRole): Stop[] {
+  const region = REGIONS.find((r) => r.id === regionId);
+  return region ? region.palette[role] : [];
 }
 
 // Patches a material's <map_fragment> shader chunk with:

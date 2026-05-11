@@ -61,6 +61,13 @@ export default function SkateNpc({
   }, [clonedScene]);
 
   useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[SkateNpc] animations:',
+        animations.map((c) => `${c.name}=${c.duration.toFixed(2)}s`).join(', ') || '(none)',
+      );
+    }
     if (animations.length === 0) return;
     const longest = [...animations].sort((a, b) => b.duration - a.duration)[0];
     const action = actions[longest.name];
@@ -73,6 +80,10 @@ export default function SkateNpc({
   }, [animations, actions]);
 
   const startTime = useRef(performance.now() / 1000);
+  // Inner group takes the procedural bob/bank/pitch so the orbit
+  // (handled by the outer group) and the "swimming" body motion
+  // (handled here) compose cleanly without fighting each other.
+  const innerRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
     const g = group.current;
@@ -81,9 +92,12 @@ export default function SkateNpc({
     const omega = (Math.PI * 2) / period;
     const theta = omega * t + phase;
 
+    // Vertical bob: ±0.4 m at ~half the orbit speed so wing-flaps don't
+    // beat against the orbit. Independent of `period` direction.
+    const bob = Math.sin(omega * t * 2) * 0.4;
     g.position.x = center[0] + Math.cos(theta) * radius;
     g.position.z = center[1] + Math.sin(theta) * radius;
-    g.position.y = height;
+    g.position.y = height + bob;
 
     // Velocity direction = derivative of position w.r.t. theta:
     //   (-sin θ, cos θ). Yaw so the model's local +X (its head, after
@@ -93,11 +107,25 @@ export default function SkateNpc({
     const vx = -Math.sin(theta) * Math.sign(period);
     const vz = Math.cos(theta) * Math.sign(period);
     g.rotation.y = Math.atan2(vx, vz) - Math.PI / 2;
+
+    // Procedural body motion on the inner group. The skate.glb on disk
+    // is currently a static mesh (0 anims), so this is the only thing
+    // that makes it look alive. When the rigged GLB lands the swim
+    // clip plays simultaneously and these add a subtle bank on top.
+    const inner = innerRef.current;
+    if (inner) {
+      // Bank into the turn: roll around its forward axis. Sign matches
+      // direction of travel so it tilts the right way around the orbit.
+      inner.rotation.z = 0.18 * Math.sign(period);
+      // Wing-flap fake: pitch oscillation matched to the bob frequency
+      // so the body subtly nods up-down with each "flap".
+      inner.rotation.x = Math.sin(omega * t * 2) * 0.12;
+    }
   });
 
   return (
     <group ref={group}>
-      <group scale={scale}>
+      <group ref={innerRef} scale={scale}>
         <primitive object={clonedScene} />
       </group>
     </group>

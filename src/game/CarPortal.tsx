@@ -19,7 +19,12 @@ const URL = '/models/car_01.glb';
 // reach it from anywhere they can read it on screen.
 const TRIGGER_DISTANCE = 4.0;
 
-type Gate = 'bobbleVanished' | 'hasKey';
+// `bobbleVanished` / `hasKey` gate on a game-state bool; `key:<region>`
+// gates on the player having a specific portal-key in their inventory
+// (see useGame.keys). The colon syntax keeps both behaviours flowing
+// through the same `gate` prop without breaking existing levels.ts
+// data.
+type Gate = 'bobbleVanished' | 'hasKey' | `key:${RegionId}`;
 
 type Props = {
   id: string;
@@ -123,7 +128,11 @@ export default function CarPortal({
 
 function isUnlocked(gate: Gate): boolean {
   const g = useGame.getState();
-  return gate === 'bobbleVanished' ? g.bobbleVanished : g.hasKey;
+  if (gate === 'bobbleVanished') return g.bobbleVanished;
+  if (gate === 'hasKey') return g.hasKey;
+  // `key:<region>` — gate on a specific portal-key in the inventory.
+  const region = gate.slice(4) as RegionId;
+  return g.keys.includes(region);
 }
 
 useGLTF.preload(URL);

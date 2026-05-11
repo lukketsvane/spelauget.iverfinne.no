@@ -11,7 +11,19 @@ import type { Stop } from './gradients';
 // the menu's "Travel" buttons and the in-world portals teleport the
 // player directly to waypoint.center.
 
-export type RegionId = 'lysningen' | 'stjerneengen' | 'remnants';
+// Five-world chain: hagen (lysningen) → blodverden (blod) →
+// flisverden (geometri) → saltverden (siste) → speilverden (senter).
+// `remnants` lingers as a legacy gradient row but no spawns target
+// it and the menu hides it from the Travel list. `stjerneengen` was
+// removed entirely — its content is gone, the legacy migration
+// rewrites old `stjerneengen` keys to `blod`.
+export type RegionId =
+  | 'lysningen'
+  | 'remnants'
+  | 'blod'
+  | 'geometri'
+  | 'siste'
+  | 'senter';
 
 export type RegionPalette = {
   ground: Stop[];
@@ -36,71 +48,38 @@ export type RegionDef = {
 // --- Palette stops -------------------------------------------------------
 // Ported from the old per-level definitions, untouched.
 
-// --- Lysningen — vibrant emerald / grass-green, brightest --------------
-// The "alive" zone. Saturated leafy green with a pale-lime ceiling
-// so the digger's clearing reads like a forest interior at noon.
-// High lightness range (0.10 → 1.0) keeps the zone luminous against
-// the dark fog.
+// --- Lysningen — vibrant azure / sky-blue, brightest --------------------
+// The "alive" zone — re-painted from forest green to a saturated
+// azure so the spawn area reads like a luminous blue clearing.
+// Lightness floor lifted (0.0 stop is a deep navy rather than near-
+// black) so the spawn is brighter than the other zones, not deeper.
 const LYSNINGEN_GROUND: Stop[] = [
-  [0.0, '#0a2810'],
-  [0.4, '#1c5e2a'],
-  [0.7, '#52c84a'],
-  [1.0, '#dcfac0'],
+  [0.0, '#1d4f9a'],
+  [0.35, '#3a8ce4'],
+  [0.7, '#7cc4ff'],
+  [1.0, '#e8f4ff'],
 ];
 const LYSNINGEN_PLANT: Stop[] = [
-  [0.0, '#04200c'],
-  [0.3, '#1c6c2c'],
-  [0.55, '#3cd84a'],
-  [0.8, '#a8f898'],
-  [1.0, '#eaffd6'],
+  [0.0, '#1a3e7a'],
+  [0.3, '#3a8ce4'],
+  [0.55, '#62b8ff'],
+  [0.8, '#bce0ff'],
+  [1.0, '#f0f8ff'],
 ];
 const LYSNINGEN_HALO: Stop[] = [
   [0.0, '#000000'],
-  [0.4, '#000000'],
-  [0.55, '#0e4a1a'],
-  [0.75, '#3edc44'],
-  [0.9, '#a8f898'],
-  [1.0, '#f0fff0'],
+  [0.4, '#0a1c40'],
+  [0.55, '#1e4ea0'],
+  [0.75, '#62a8ff'],
+  [0.9, '#bcdcff'],
+  [1.0, '#f8fcff'],
 ];
 const LYSNINGEN_RELIC: Stop[] = [
-  [0.0, '#04140a'],
-  [0.25, '#1c3e1e'],
-  [0.5, '#3a8c3c'],
-  [0.75, '#a4dca0'],
-  [1.0, '#eaffe8'],
-];
-
-// --- Stjerneengen — light sky blue / ice, mid-bright -------------------
-// Pure cool sky blue so the relic-dominated zone feels ethereal,
-// like standing under a clear winter sky. Plant + halo gradients
-// peak at near-white sky tones; ground stays a deeper navy at the
-// bottom for contrast.
-const STJERNE_GROUND: Stop[] = [
-  [0.0, '#082240'],
-  [0.35, '#1c5e9a'],
-  [0.7, '#76b8ec'],
-  [1.0, '#dceefa'],
-];
-const STJERNE_PLANT: Stop[] = [
-  [0.0, '#021430'],
-  [0.35, '#0e5aa4'],
-  [0.6, '#3aa8e8'],
-  [0.85, '#a8dcf8'],
-  [1.0, '#f0f8fc'],
-];
-const STJERNE_HALO: Stop[] = [
-  [0.0, '#000000'],
-  [0.55, '#000000'],
-  [0.7, '#0c4078'],
-  [0.85, '#62cdff'],
-  [1.0, '#dcf2ff'],
-];
-const STJERNE_RELIC: Stop[] = [
-  [0.0, '#020c1a'],
-  [0.25, '#10385a'],
-  [0.5, '#3a8ec4'],
-  [0.75, '#9ed4ec'],
-  [1.0, '#f0f8fc'],
+  [0.0, '#0a1430'],
+  [0.25, '#1e3e80'],
+  [0.5, '#4a8edc'],
+  [0.75, '#a8d2ff'],
+  [1.0, '#f0f6ff'],
 ];
 
 // --- Remnants — black & white, near-monochrome -------------------------
@@ -137,16 +116,176 @@ const REMNANT_RELIC: Stop[] = [
   [1.0, '#f4f4f4'],
 ];
 
-// Region centres compressed into the WORLD_RADIUS=60 disc. Lysningen
-// surrounds the player spawn (north-of-centre), Stjerneengen owns the
-// east-middle band (locked gate + parked car), Remnants is the
-// south-third where the exit gate sits. Sigmas tightened so each
-// region's palette dominates clearly within the smaller world while
-// still blending smoothly between neighbours.
+// --- Blodverden — drowned in red, every surface bathed in blood light
+// Ground textures sample mostly mid-luminance (~0.4–0.7), so the
+// dominant red band MUST live there — not at the brightest end.
+// Shifts: 0.0 stays pitch-black for deep shadow only, but red lifts
+// fast and stays saturated through the whole mid-band. Pink-white
+// only at the absolute brightest highlight. This matches the
+// reference where almost everything reads as red, with black only
+// in voids and pink only on lit edges.
+const BLOD_GROUND: Stop[] = [
+  [0.0, '#000000'],
+  [0.18, '#3a0408'],
+  [0.38, '#9c1018'],
+  [0.58, '#dc1c2c'],
+  [0.78, '#ff4858'],
+  [0.92, '#ffa0ac'],
+  [1.0, '#ffe0e4'],
+];
+const BLOD_PLANT: Stop[] = [
+  [0.0, '#000000'],
+  [0.2, '#380408'],
+  [0.4, '#9a1018'],
+  [0.6, '#d4202c'],
+  [0.8, '#ff5060'],
+  [1.0, '#ffd4d8'],
+];
+const BLOD_HALO: Stop[] = [
+  // Halo lifts off black sooner so the air itself glows red — the
+  // chamber is filled with blood light, not just spot-lit. Top
+  // burst into pink remains for hot rim highlights on close props.
+  [0.0, '#000000'],
+  [0.4, '#1a0204'],
+  [0.6, '#6a0814'],
+  [0.78, '#c8202c'],
+  [0.92, '#ff6878'],
+  [1.0, '#ffd0d6'],
+];
+const BLOD_RELIC: Stop[] = [
+  // Remnant silhouettes: black core for the deepest shadow lines
+  // but bright saturated red across most of the painted figure so
+  // the silhouettes don't read as flat-black holes.
+  [0.0, '#000000'],
+  [0.2, '#3c0408'],
+  [0.4, '#a01020'],
+  [0.6, '#e02030'],
+  [0.78, '#ff5868'],
+  [1.0, '#ffc4cc'],
+];
+
+// --- Flisverden — luminous mint / jade green, very bright ------------
+// Brighter pass: even the darkest stop is a clearly-green mid-jade
+// instead of near-black, and the halo lifts off black entirely so
+// the air reads as glowing rather than lit-from-elsewhere. The
+// brightest stops push to near-pure white for a snow-on-grass
+// "luminous floor" feel.
+const GEOMETRI_GROUND: Stop[] = [
+  [0.0, '#1a5a40'],
+  [0.3, '#3cb478'],
+  [0.6, '#7af0b8'],
+  [0.85, '#d0fbe4'],
+  [1.0, '#fafffa'],
+];
+const GEOMETRI_PLANT: Stop[] = [
+  [0.0, '#1a4e34'],
+  [0.3, '#3aa86a'],
+  [0.6, '#74e6a8'],
+  [0.85, '#caf4dc'],
+  [1.0, '#fafffa'],
+];
+const GEOMETRI_HALO: Stop[] = [
+  // No more pure black at the bottom — even the darkest air carries
+  // a faint jade glow so the world never goes dim.
+  [0.0, '#06241a'],
+  [0.35, '#1c6a48'],
+  [0.6, '#48c888'],
+  [0.78, '#94f0c0'],
+  [0.92, '#dafce8'],
+  [1.0, '#f8fffa'],
+];
+const GEOMETRI_RELIC: Stop[] = [
+  [0.0, '#1a4e36'],
+  [0.25, '#34a070'],
+  [0.5, '#74e8aa'],
+  [0.75, '#c4f6dc'],
+  [1.0, '#f8fffa'],
+];
+
+// --- Saltverden — bright snow-white / cool silver --------------------
+// Pure white-blue salt-flat ramp: dark icy blue at the bottom,
+// brightening through silver to pure white. The lightest of all
+// worlds; reads as a luminous bleached-out place.
+const SISTE_GROUND: Stop[] = [
+  [0.0, '#10202c'],
+  [0.3, '#506478'],
+  [0.6, '#b4c4d0'],
+  [0.85, '#e8eef4'],
+  [1.0, '#ffffff'],
+];
+const SISTE_PLANT: Stop[] = [
+  [0.0, '#0a1620'],
+  [0.3, '#48586c'],
+  [0.6, '#aab8c4'],
+  [0.85, '#e0e8ee'],
+  [1.0, '#ffffff'],
+];
+const SISTE_HALO: Stop[] = [
+  [0.0, '#000000'],
+  [0.4, '#0a1620'],
+  [0.6, '#3a5068'],
+  [0.78, '#a4b8cc'],
+  [0.92, '#e8eef4'],
+  [1.0, '#ffffff'],
+];
+const SISTE_RELIC: Stop[] = [
+  [0.0, '#0a1620'],
+  [0.25, '#3e5066'],
+  [0.5, '#9aacc0'],
+  [0.75, '#dce4ec'],
+  [1.0, '#ffffff'],
+];
+
+// --- Speilverden — iridescent violet / mirror-purple -----------------
+// Bright fuchsia-violet end of the spectrum so the destination world
+// reads as something otherworldly. Distinct from Hagen blue and the
+// other chain hues. Brightens to a pearly white-violet at the top.
+const SENTER_GROUND: Stop[] = [
+  [0.0, '#1a0828'],
+  [0.3, '#5a1c8a'],
+  [0.6, '#b04ce4'],
+  [0.85, '#e8b4f8'],
+  [1.0, '#fbeefd'],
+];
+const SENTER_PLANT: Stop[] = [
+  [0.0, '#140622'],
+  [0.3, '#4e1880'],
+  [0.6, '#a448dc'],
+  [0.85, '#e0acf2'],
+  [1.0, '#faecfd'],
+];
+const SENTER_HALO: Stop[] = [
+  [0.0, '#000000'],
+  [0.4, '#180826'],
+  [0.6, '#5a1c8a'],
+  [0.78, '#c46cee'],
+  [0.92, '#f0d0f8'],
+  [1.0, '#fbf4fe'],
+];
+const SENTER_RELIC: Stop[] = [
+  [0.0, '#100620'],
+  [0.25, '#4a1878'],
+  [0.5, '#a448dc'],
+  [0.75, '#e0acf2'],
+  [1.0, '#fbf4fe'],
+];
+
+// Region centres. Three legacy zones (lysningen / stjerneengen /
+// remnants) keep their existing positions so authored content stays
+// where it was. The four new regions occupy the previously-empty
+// quadrants of the WORLD_RADIUS=120 disc:
+//
+//   blod      (-90, -50)  — far west, behind/beside the spawn
+//   geometri  (-90,  60)  — south-west, opposite stjerneengen
+//   siste     ( 90, -50)  — north-east, deep north corner
+//   senter    ( 90,  70)  — south-east, the mandala destination
+//
+// Sigmas stay tight (~24 m) so each palette dominates within ~20 m of
+// its centre and blends smoothly into the neighbour at the boundary.
 export const REGIONS: RegionDef[] = [
   {
     id: 'lysningen',
-    name: 'The Clearing',
+    name: 'Hagen',
     center: [0, -30],
     // Tighter sigma than the Gaussian softmax used to default to —
     // each zone's palette now dominates ~95%+ within ~20 m of its
@@ -161,18 +300,6 @@ export const REGIONS: RegionDef[] = [
     },
   },
   {
-    id: 'stjerneengen',
-    name: 'The Star Meadow',
-    center: [50, 30],
-    sigma: 22,
-    palette: {
-      ground: STJERNE_GROUND,
-      plant: STJERNE_PLANT,
-      halo: STJERNE_HALO,
-      relic: STJERNE_RELIC,
-    },
-  },
-  {
     id: 'remnants',
     name: 'The Remnants',
     center: [0, 90],
@@ -182,6 +309,54 @@ export const REGIONS: RegionDef[] = [
       plant: REMNANT_PLANT,
       halo: REMNANT_HALO,
       relic: REMNANT_RELIC,
+    },
+  },
+  {
+    id: 'blod',
+    name: 'Blodverden',
+    center: [-90, -50],
+    sigma: 24,
+    palette: {
+      ground: BLOD_GROUND,
+      plant: BLOD_PLANT,
+      halo: BLOD_HALO,
+      relic: BLOD_RELIC,
+    },
+  },
+  {
+    id: 'geometri',
+    name: 'Flisverden',
+    center: [-90, 60],
+    sigma: 24,
+    palette: {
+      ground: GEOMETRI_GROUND,
+      plant: GEOMETRI_PLANT,
+      halo: GEOMETRI_HALO,
+      relic: GEOMETRI_RELIC,
+    },
+  },
+  {
+    id: 'siste',
+    name: 'Saltverden',
+    center: [90, -50],
+    sigma: 24,
+    palette: {
+      ground: SISTE_GROUND,
+      plant: SISTE_PLANT,
+      halo: SISTE_HALO,
+      relic: SISTE_RELIC,
+    },
+  },
+  {
+    id: 'senter',
+    name: 'Speilverden',
+    center: [90, 70],
+    sigma: 22,
+    palette: {
+      ground: SENTER_GROUND,
+      plant: SENTER_PLANT,
+      halo: SENTER_HALO,
+      relic: SENTER_RELIC,
     },
   },
 ];

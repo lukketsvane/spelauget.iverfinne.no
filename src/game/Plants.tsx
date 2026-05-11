@@ -6,6 +6,7 @@ import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { applyGradientMap, getGradientTexture } from './gradients';
 import { makeRegionGradientTexture } from './regions';
+import { useLevel } from '@/store/level';
 import { useSettings } from '@/store/settings';
 
 // height = world units tall.
@@ -42,6 +43,14 @@ type PlantUniforms = {
 };
 
 export default function Plants({ playerPosRef, exclusions }: Props) {
+  // Procedural plant chunks render only inside Hagen — the four
+  // chain destinations (Blodverden / Flisverden / Saltverden /
+  // Speilverden) are intentionally empty blank slates per the
+  // user's "tomme verdener bortsett fra første" brief. Hooks below
+  // still run unconditionally to keep the call order stable; we
+  // just early-return null at JSX time when the active region
+  // isn't Hagen.
+  const isHagen = useLevel((s) => s.currentRegionId === 'lysningen');
   const textures = useTexture(PLANT_SOURCES.map((p) => p.url));
 
   useMemo(() => {
@@ -167,6 +176,8 @@ export default function Plants({ playerPosRef, exclusions }: Props) {
       return changed ? next : prev;
     });
   });
+
+  if (!isHagen) return null;
 
   return (
     <group>

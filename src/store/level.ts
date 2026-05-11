@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { findPlayerSpawn, LEVELS } from '@/game/levels';
+import {
+  findPlayerSpawn,
+  LEVELS,
+  WORLD_SPAWN_POINTS,
+} from '@/game/levels';
 import { getRegion, regionAt, REGIONS, type RegionId } from '@/game/regions';
 import { useDialogue } from '@/store/dialogue';
 import { useInput } from '@/store/input';
@@ -81,8 +85,15 @@ export const useLevel = create<LevelState>()(
         set({ transitionPhase: 'out' });
         setTimeout(() => {
           const region = getRegion(target);
+          // Per-world spawn points let Hagen keep its world-origin
+          // spawn while empty worlds drop the player at their region
+          // centre.
+          const spawn = WORLD_SPAWN_POINTS[region.id] ?? {
+            x: region.center[0],
+            z: region.center[1],
+          };
           set((s) => ({
-            playerSpawn: { x: region.center[0], z: region.center[1] },
+            playerSpawn: spawn,
             changeCounter: s.changeCounter + 1,
             transitionPhase: 'in',
             savedPosition: null,
@@ -137,18 +148,19 @@ export const useLevel = create<LevelState>()(
     }),
     {
       name: 'spelauget.level',
-      version: 4,
+      version: 5,
       partialize: (s) => ({
         savedPosition: s.savedPosition,
         currentRegionId: s.currentRegionId,
         discoveredWaypoints: s.discoveredWaypoints,
       }),
-      // v3 → v4: collapse the multi-level model into a single world.
-      // currentLevelId is dropped (always 'world' now); discoveredLevels
-      // becomes discoveredWaypoints (mapping the old level ids to
-      // their region equivalents). savedPosition carries forward
-      // verbatim, but we drop it if it would land the player far
-      // outside any region centre — old saves used per-level coords.
+      // v3 → v4: collapse the multi-level model into a single shared
+      //   world. currentLevelId is dropped; old discoveredLevels gets
+      //   mapped to its region equivalent.
+      // v4 → v5: stjerneengen was removed entirely. Any persisted
+      //   currentRegionId / discoveredWaypoints entry of
+      //   'stjerneengen' rewrites to 'blod' so the player still has
+      //   somewhere to be / travel to after the upgrade.
       migrate: (persistedState, version) => {
         type Persisted = {
           savedPosition: { x: number; z: number } | null;
@@ -158,33 +170,42 @@ export const useLevel = create<LevelState>()(
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState as Persisted;
         }
-        if (version >= 4) return persistedState as Persisted;
 
         const obj = persistedState as Record<string, unknown>;
-        // Old discoveredLevels used the level1/2/3 ids.
-        const oldDiscovered = (obj.discoveredLevels as string[] | undefined) ?? [
-          'level1',
-        ];
-        const map: Record<string, RegionId> = {
-          level1: 'lysningen',
-          level2: 'stjerneengen',
-          level3: 'remnants',
-        };
-        const seedSet = new Set<RegionId>(['lysningen']);
-        for (const id of oldDiscovered) {
-          const r = map[id];
-          if (r) seedSet.add(r);
+
+        if (version < 4) {
+          // Old discoveredLevels used the level1/2/3 ids.
+          const oldDiscovered = (obj.discoveredLevels as string[] | undefined) ?? [
+            'level1',
+          ];
+          // level2 used to map to 'stjerneengen'; that region is gone,
+          // so stride straight to 'blod' (the chain successor).
+          const map: Record<string, RegionId> = {
+            level1: 'lysningen',
+            level2: 'blod',
+            level3: 'remnants',
+          };
+          const seedSet = new Set<RegionId>(['lysningen']);
+          for (const id of oldDiscovered) {
+            const r = map[id];
+            if (r) seedSet.add(r);
+          }
+          obj.savedPosition = null;
+          obj.currentRegionId = 'lysningen';
+          obj.discoveredWaypoints = [...seedSet];
         }
 
-        // Old per-level savedPosition no longer makes sense in a
-        // shared world — drop it so the player respawns at the world
-        // origin (Lysningen's centre) on first load after the
-        // upgrade. Less surprising than landing them somewhere stale.
-        return {
-          savedPosition: null,
-          currentRegionId: 'lysningen',
-          discoveredWaypoints: [...seedSet],
-        };
+        if (version < 5) {
+          // Rewrite stale 'stjerneengen' refs to 'blod'.
+          const cur = obj.currentRegionId as string | undefined;
+          if (cur === 'stjerneengen') obj.currentRegionId = 'blod';
+          const dw = (obj.discoveredWaypoints as string[] | undefined) ?? [];
+          obj.discoveredWaypoints = dw.map((d) =>
+            d === 'stjerneengen' ? 'blod' : d,
+          );
+        }
+
+        return obj as unknown as Persisted;
       },
       onRehydrateStorage: () => (state) => {
         if (state) {

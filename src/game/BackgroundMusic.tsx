@@ -5,16 +5,16 @@ import { useAudio } from '@/store/audio';
 import { useLevel } from '@/store/level';
 import type { RegionId } from './regions';
 
-// Per-region playlists. Tracks were split roughly by mood: the first
-// two lean toward the warmer magenta-Lysningen vibe, the last two
-// toward the cooler Stjerneengen / Remnants palettes. The currently
-// playing track always finishes — only the NEXT track is picked from
-// the active region's pool, so region transitions cross-mood
-// gradually rather than cutting mid-bar.
+// Per-region playlists. Each chain world picks tracks by mood; the
+// legacy `remnants` row is kept as a fallback even though no
+// content currently targets it.
 const PLAYLISTS: Record<RegionId, string[]> = {
   lysningen: ['/sounds/ost_01.mp3', '/sounds/ost_02.mp3'],
-  stjerneengen: ['/sounds/ost_03.mp3', '/sounds/ost_04.mp3'],
   remnants: ['/sounds/ost_04.mp3', '/sounds/ost_03.mp3'],
+  blod: ['/sounds/ost_03.mp3', '/sounds/ost_04.mp3'],
+  geometri: ['/sounds/ost_04.mp3', '/sounds/ost_03.mp3'],
+  siste: ['/sounds/ost_04.mp3', '/sounds/ost_03.mp3'],
+  senter: ['/sounds/ost_01.mp3', '/sounds/ost_02.mp3'],
 };
 const FADE_MS = 4000;
 

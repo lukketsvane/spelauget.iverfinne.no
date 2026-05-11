@@ -14,8 +14,9 @@ export function dayBrightness(phase: number): number {
   return 0.95 + 0.45 * (0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - 0.25)));
 }
 
-// Hue rotation in radians. Sweeps ±π/4 (±45°) across the cycle so colours
-// drift from cool-blue night through warm-pink day and back.
+// Hue rotation in radians. Smaller sweep (±π/12 ≈ ±15°) keeps the
+// blue spawn region readable as blue throughout the cycle — only a
+// gentle warm/cool drift, not a full hue swing into violet/magenta.
 export function dayHueAngle(phase: number): number {
-  return Math.cos(2 * Math.PI * (phase - 0.25)) * (Math.PI / 4);
+  return Math.cos(2 * Math.PI * (phase - 0.25)) * (Math.PI / 12);
 }

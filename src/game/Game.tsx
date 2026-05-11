@@ -10,14 +10,13 @@ import Dialogue from '@/hud/Dialogue';
 import LevelLabel from '@/hud/LevelLabel';
 import MainMenu from '@/hud/MainMenu';
 import PauseMenuButton from '@/hud/PauseMenuButton';
-import MapButton from '@/hud/MapButton';
 import BlackOverlay from '@/hud/BlackOverlay';
 import TeleportOverlay from '@/hud/TeleportOverlay';
 import MenuHotkey from '@/hud/MenuHotkey';
 import FpsOverlay from '@/hud/FpsOverlay';
 import ToastHost from '@/hud/ToastHost';
 import VoiceHost from '@/hud/VoiceHost';
-import MapOverlay from '@/hud/MapOverlay';
+import GradientTuner from '@/hud/GradientTuner';
 import PointerInput from './PointerInput';
 import KeyboardInput from './KeyboardInput';
 import BackgroundMusic from './BackgroundMusic';
@@ -64,14 +63,14 @@ export default function Game() {
           <Dialogue />
           <LevelLabel />
           <PauseMenuButton />
-          <MapButton />
           <ToastHost />
+          {/* Dev-only palette + fog tuner. Strip before shipping. */}
+          <GradientTuner />
         </>
       )}
 
       {!inGame && <MainMenu />}
 
-      <MapOverlay />
       <BlackOverlay />
       <TeleportOverlay />
       <MenuHotkey />

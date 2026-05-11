@@ -5,22 +5,51 @@ import { useGame } from '@/store/game';
 export default function HUD() {
   const hearts = useGame((s) => s.hearts);
   const coins = useGame((s) => s.coins);
-  const crystals = useGame((s) => s.crystals);
   const hasKey = useGame((s) => s.hasKey);
-  const xp = useGame((s) => s.xp);
-  const xpToNext = useGame((s) => s.xpToNext);
+  const keys = useGame((s) => s.keys);
+  const artifacts = useGame((s) => s.artifacts);
 
   // Build the inventory list dynamically — only items the player has
   // actually picked up appear under the hearts.
+  //
+  // Key icon shows once with a count when the player has more than
+  // the legacy single key. Keeps the HUD compact even after they
+  // collect all four portal-keys; the count communicates progression
+  // through the chain.
+  //
+  // (Crystal pickup was removed from the world, so the crystal slot
+  // no longer renders — store field is kept for backwards-compat
+  // saves but never increments anymore.)
   const items: { id: string; src: string; count?: number }[] = [];
-  if (hasKey) items.push({ id: 'key', src: '/menu/key_01.png' });
+  if (hasKey || keys.length > 0) {
+    items.push({
+      id: 'key',
+      // The digger's key is rendered via the blod_verden key tile —
+      // it's the same physical object the player carries through
+      // every portal in the chain. URL-encoded ø so the path works
+      // when the dev server serves it as static.
+      src: '/blod_verden/flis_n%C3%B8kkel.png',
+      count: keys.length > 1 ? keys.length : undefined,
+    });
+  }
+  if (artifacts.length > 0) {
+    // Artefacts are deliberately understated — same crystal icon as a
+    // placeholder until a proper artefact sprite exists. Count
+    // doubles as the bitmask population count for the endings.
+    items.push({
+      id: 'artifacts',
+      src: '/menu/crystal.png',
+      count: artifacts.length,
+    });
+  }
   if (coins > 0) items.push({ id: 'coins', src: '/menu/coin.png', count: coins });
-  if (crystals > 0)
-    items.push({ id: 'crystals', src: '/menu/crystal.png', count: crystals });
 
   return (
     <div className="pointer-events-none absolute inset-0 select-none">
-      {/* Top-left: hearts + collected items, stacked vertically. */}
+      {/* Top-left: hearts + collected items, stacked vertically.
+          (XP / level progress bar in the top-right was removed —
+          progression is now legible via the key + artefact slots
+          alone.) */}
       <div className="absolute left-4 top-4 flex flex-col gap-2 text-violet-100">
         <div className="flex gap-1.5">
           {Array.from({ length: 3 }, (_, i) => (
@@ -34,20 +63,6 @@ export default function HUD() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Top-right: XP. Pause button now lives in the bottom-left so
-          this corner is back to its normal top spot. */}
-      <div className="absolute right-4 top-4 flex flex-col items-end gap-1 text-violet-100">
-        <div className="text-xs">
-          {xp} / {xpToNext} XP
-        </div>
-        <div className="h-2 w-32 overflow-hidden rounded-sm border border-violet-300/60 bg-violet-950/60">
-          <div
-            className="h-full bg-gradient-to-r from-pink-400 to-violet-300 transition-[width] duration-200"
-            style={{ width: `${Math.min(100, (xp / xpToNext) * 100)}%` }}
-          />
-        </div>
       </div>
     </div>
   );

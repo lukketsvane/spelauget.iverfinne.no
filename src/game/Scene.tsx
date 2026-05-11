@@ -15,14 +15,17 @@ import { CAMERA } from './config';
 import { useInput } from '@/store/input';
 import { dayBrightness, dayHueAngle, dayPhase } from './dayCycle';
 import { setGradientTexture, updateGradientUniforms } from './gradients';
-import { LEVELS } from './levels';
+import { WORLD_SPAWNS } from './levels';
 import { makeRegionGradientTexture } from './regions';
+import { useLevel } from '@/store/level';
+import { useTuner } from '@/store/tuner';
 
 const LIGHT_OFFSET = new THREE.Vector3(8, 14, 6);
 
-// Background colour and fog match — distant geometry blends into the
-// horizon for a deeper, more atmospheric feel.
-const NIGHT = '#0a0418';
+// Default background / fog tint — used as a fallback only; the
+// per-region fog config now lives in useTuner.fogByRegion so the
+// dev tuner panel can edit it live.
+const NIGHT = '#1a1230';
 
 // The day/night cycle changes brightness over a 10-minute period, i.e.
 // the visible delta per frame is microscopic. Quantising the uniform
@@ -48,7 +51,7 @@ export default function Scene() {
   // separate setInterval and its own timer drift.
   const lastDayUpdateRef = useRef(0);
 
-  const { size, gl } = useThree();
+  const { size, gl, scene } = useThree();
 
   const setCamera = useInput((s) => s.setCamera);
   const setCanvasEl = useInput((s) => s.setCanvasEl);
@@ -78,10 +81,13 @@ export default function Scene() {
 
   // No-plant bubbles around every NPC / prop so the digging character,
   // huts, rocks, etc. always have a clean ring of bare ground around
-  // them. The world's spawn list is constant for a session so this
-  // is computed once.
+  // them. Recomputed when the active region's spawn list changes so
+  // a brand-new empty world doesn't carry over Hagen's exclusion
+  // bubbles.
+  const regionId = useLevel((s) => s.currentRegionId);
   const plantExclusions = useMemo(() => {
-    return LEVELS.world.spawns
+    const spawns = WORLD_SPAWNS[regionId] ?? [];
+    return spawns
       .filter(
         (s) =>
           s.kind === 'star_npc' ||
@@ -122,7 +128,7 @@ export default function Scene() {
                         : 3;
         return { x: s.position[0], z: s.position[1], r };
       });
-  }, []);
+  }, [regionId]);
   // Build the four region-blended 2D gradient textures once at mount;
   // every gradient-mapped surface samples them via the registry. The
   // textures are immutable for the lifetime of the world (palettes
@@ -182,17 +188,38 @@ export default function Scene() {
       const hue = dayHueAngle(phase);
       updateGradientUniforms(hue, brightness);
 
-      if (ambientRef.current) ambientRef.current.intensity = 1.1 * brightness;
-      if (hemisphereRef.current) hemisphereRef.current.intensity = 0.95 * brightness;
-      if (light) light.intensity = 1.4 * brightness;
+      if (ambientRef.current) ambientRef.current.intensity = 1.7 * brightness;
+      if (hemisphereRef.current) hemisphereRef.current.intensity = 1.4 * brightness;
+      if (light) light.intensity = 1.7 * brightness;
 
-      // Fog tint follows the cycle so distant geometry blends into a sky
-      // that matches the current "time of day".
+      // Fog tint + distance follows the active region. Day-cycle
+      // brightness multiplies the base colour so each region still
+      // breathes with the noon/midnight cycle. Fog near/far updates
+      // every cycle tick too — switching region snaps to that
+      // region's mist density without a fade (visually OK because
+      // region transitions already happen behind the fade-to-black).
       if (fogRef.current) {
-        // 0.6 darker at midnight, 1.4 brighter at noon — relative to base.
+        const fogByRegion = useTuner.getState().fogByRegion;
+        const regionId = useLevel.getState().currentRegionId;
+        const atmos = fogByRegion[regionId] ?? {
+          color: NIGHT,
+          near: 40,
+          far: 95,
+        };
         const tint = 0.6 + 0.8 * brightness;
-        dayColor.current.set(NIGHT).multiplyScalar(tint);
+        dayColor.current.set(atmos.color).multiplyScalar(tint);
         fogRef.current.color.copy(dayColor.current);
+        fogRef.current.near = atmos.near;
+        fogRef.current.far = atmos.far;
+        // Background: same colour family as fog so the horizon line
+        // disappears. set() reuses the THREE.Color object from
+        // dayColor — assigning it to scene.background overrides the
+        // <color attach="background"> set at mount time.
+        if (scene.background instanceof THREE.Color) {
+          scene.background.copy(dayColor.current);
+        } else {
+          scene.background = dayColor.current.clone();
+        }
       }
     }
   });
@@ -201,7 +228,7 @@ export default function Scene() {
     <>
       {/* Atmospheric fog: distant trees fade into the sky. Colour is
           updated each frame so it follows the day/night tint. */}
-      <fog ref={fogRef} attach="fog" args={[NIGHT, 24, 60]} />
+      <fog ref={fogRef} attach="fog" args={[NIGHT, 40, 95]} />
       <color attach="background" args={[NIGHT]} />
 
       <OrthographicCamera
@@ -215,8 +242,8 @@ export default function Scene() {
 
       {/* Cool low ambient + violet hemisphere = night gloom. Intensities
           are mutated each frame by the day-cycle loop above. */}
-      <ambientLight ref={ambientRef} intensity={0.45} color="#5a4a8a" />
-      <hemisphereLight ref={hemisphereRef} args={['#7c5fb8', '#0a0418', 0.55]} />
+      <ambientLight ref={ambientRef} intensity={0.7} color="#7060a0" />
+      <hemisphereLight ref={hemisphereRef} args={['#9a78d0', '#1a1230', 0.8]} />
       <directionalLight
         ref={lightRef}
         position={[LIGHT_OFFSET.x, LIGHT_OFFSET.y, LIGHT_OFFSET.z]}

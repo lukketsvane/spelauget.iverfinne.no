@@ -8,6 +8,19 @@ import { useMenu } from '@/store/menu';
 import { useSettings } from '@/store/settings';
 import { getRegion, type RegionId } from '@/game/regions';
 
+// The five named worlds the player can teleport between. Listed in
+// chain order so the menu reads as "the journey" top-to-bottom. The
+// legacy stjerneengen / remnants regions still exist in REGIONS for
+// gradient/blend purposes but aren't surfaced here — they're not
+// part of the user-facing chain.
+const CHAIN_REGION_IDS: RegionId[] = [
+  'lysningen',
+  'blod',
+  'geometri',
+  'siste',
+  'senter',
+];
+
 // Splash menu shown before the game canvas takes focus, and as a
 // pause overlay when the player taps the menu button mid-game.
 //
@@ -23,7 +36,6 @@ export default function MainMenu() {
   const showSettings = useMenu((s) => s.showSettings);
   const hasStartedGame = useMenu((s) => s.hasStartedGame);
   const backToTitle = useMenu((s) => s.backToTitle);
-  const discoveredWaypoints = useLevel((s) => s.discoveredWaypoints);
   const currentRegionId = useLevel((s) => s.currentRegionId);
 
   // "Has save" check: read whatever zustand persisted under
@@ -69,11 +81,12 @@ export default function MainMenu() {
     startNewGame();
   };
 
-  // Fast-travel buttons: offered once the player has discovered any
-  // region other than the one they're standing in. Tapping triggers
-  // the cinematic fade-relocate-fade and resumes the game in one
-  // step.
-  const travelTargets = discoveredWaypoints.filter((id) => id !== currentRegionId);
+  // Fast-travel buttons: while prototyping, every chain world is
+  // accessible from the menu regardless of whether the player has
+  // walked there. Filter out the current region so the active world
+  // doesn't show as a (no-op) target. Tapping triggers the
+  // cinematic fade-relocate-fade and resumes the game in one step.
+  const travelTargets = CHAIN_REGION_IDS.filter((id) => id !== currentRegionId);
   const handleTravel = (id: RegionId) => {
     useLevel.getState().travel(id);
     startGame();

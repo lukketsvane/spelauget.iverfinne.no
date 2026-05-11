@@ -3,7 +3,8 @@
 import { useMemo, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { useGame } from '@/store/game';
-import { LEVELS } from './levels';
+import { useLevel } from '@/store/level';
+import { WORLD_SPAWNS } from './levels';
 import StarNpc from './StarNpc';
 import BobleNpc from './BobleNpc';
 import Portal from './Portal';
@@ -17,20 +18,24 @@ import Remnant from './Remnant';
 import StaticGLB from './StaticGLB';
 import Crystal from './Crystal';
 import CrystalAltar from './CrystalAltar';
+import Key from './Key';
+import Artifact from './Artifact';
 import SkateNpc from './SkateNpc';
 
 type Props = { playerPosRef: MutableRefObject<THREE.Vector3> };
 
-// One mega-map: spawns are constant for the lifetime of the play
-// session. We mount everything once and let the entities live the
-// whole game. Fast-travel just relocates the player; nothing here
-// re-mounts on a waypoint hop, which means GLB clones / mixer state /
-// dialogue subscriptions stay intact across travels.
+// Per-world spawn rendering. We read the active region's spawn
+// array each render — when travel() flips currentRegionId, this
+// re-runs and the previous world's GLBs / NPCs / colliders unmount,
+// the new world's content mounts, and the player wakes up in a
+// fresh scene. Nothing leaks between worlds (modulo store state
+// like inventory keys, which is what you WANT to carry over).
 export default function Spawns({ playerPosRef }: Props) {
   // Portals only manifest once the digger has handed over the key —
   // before that they shouldn't even appear on the map.
   const hasKey = useGame((s) => s.hasKey);
-  const spawns = useMemo(() => LEVELS.world.spawns, []);
+  const regionId = useLevel((s) => s.currentRegionId);
+  const spawns = useMemo(() => WORLD_SPAWNS[regionId] ?? [], [regionId]);
 
   return (
     <>
@@ -58,7 +63,12 @@ export default function Spawns({ playerPosRef }: Props) {
               />
             );
           case 'portal':
-            if (!hasKey) return null;
+            // Legacy hide-until-keyed behaviour applies only to portals
+            // that opt into the legacy any-key check (no requiredKey).
+            // New 5-world chain portals declare their own requiredKey
+            // and stay visible from the start — the player needs to
+            // see the locked door to know it exists.
+            if (s.requiredKey === undefined && !hasKey) return null;
             return (
               <Portal
                 key={s.id}
@@ -68,6 +78,9 @@ export default function Spawns({ playerPosRef }: Props) {
                 playerPosRef={playerPosRef}
                 colorA={s.colorA}
                 colorB={s.colorB}
+                requiredKey={s.requiredKey}
+                texture={s.texture}
+                height={s.height}
               />
             );
           case 'stone_hut':
@@ -183,6 +196,26 @@ export default function Spawns({ playerPosRef }: Props) {
                 playerPosRef={playerPosRef}
                 scale={s.scale}
                 rotationY={s.rotation}
+              />
+            );
+          case 'key':
+            return (
+              <Key
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                opens={s.opens}
+                playerPosRef={playerPosRef}
+              />
+            );
+          case 'artifact':
+            return (
+              <Artifact
+                key={s.id}
+                id={s.id}
+                position={[s.position[0], 0, s.position[1]]}
+                region={s.region}
+                playerPosRef={playerPosRef}
               />
             );
           case 'skate':

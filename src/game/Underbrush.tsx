@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'rea
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { useLevel } from '@/store/level';
 import { useSettings } from '@/store/settings';
 import type { PlantExclusion } from './Plants';
 
@@ -41,6 +42,9 @@ type Placement = { x: number; z: number; rot: number; size: number };
 type Chunk = { key: string; placements: Placement[] };
 
 export default function Underbrush({ playerPosRef, exclusions }: Props) {
+  // Same brief as Plants — only render the procedural ground-cover
+  // mat in Hagen. Other worlds stay empty.
+  const isHagen = useLevel((s) => s.currentRegionId === 'lysningen');
   const tex = useTexture(URL);
 
   useEffect(() => {
@@ -217,6 +221,8 @@ export default function Underbrush({ playerPosRef, exclusions }: Props) {
       return changed ? next : prev;
     });
   });
+
+  if (!isHagen) return null;
 
   return (
     <group>
