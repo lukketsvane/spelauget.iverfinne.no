@@ -1,15 +1,15 @@
 {
   "spawnPoint": {
-    "x": -90,
-    "z": 74
+    "x": -90.0,
+    "z": 74.0
   },
   "spawns": [
     {
       "kind": "flis_floor",
       "id": "flis.floor.north",
       "position": [
-        -90,
-        -3
+        -90.0,
+        -3.0
       ],
       "width": 220,
       "depth": 94,
@@ -19,8 +19,8 @@
       "kind": "flis_floor",
       "id": "flis.floor.south",
       "position": [
-        -90,
-        119
+        -90.0,
+        119.0
       ],
       "width": 220,
       "depth": 102,
@@ -30,8 +30,8 @@
       "kind": "flis_floor",
       "id": "flis.floor.east",
       "position": [
-        -21,
-        56
+        -21.0,
+        56.0
       ],
       "width": 82,
       "depth": 24,
@@ -41,8 +41,8 @@
       "kind": "flis_floor",
       "id": "flis.floor.west",
       "position": [
-        -159,
-        56
+        -159.0,
+        56.0
       ],
       "width": 82,
       "depth": 24,
@@ -52,45 +52,56 @@
       "kind": "flis_pool",
       "id": "flis.pool.main",
       "position": [
-        -90,
-        56
+        -90.0,
+        56.0
       ]
     },
     {
       "kind": "giantess",
-      "id": "flis.giantess.nw",
+      "id": "flis.giantess.west",
       "position": [
-        -128,
-        40
+        -126.0,
+        56.0
       ],
-      "rotation": -0.7853981633974483
+      "scale": 11.0
     },
     {
       "kind": "giantess",
-      "id": "flis.giantess.ne",
+      "id": "flis.giantess.east",
       "position": [
-        -52,
-        40
+        -54.0,
+        56.0
       ],
-      "rotation": 3.9269908169872414
+      "rotation": 3.1416,
+      "scale": 11.0
     },
     {
       "kind": "giantess",
-      "id": "flis.giantess.n",
+      "id": "flis.giantess.back",
       "position": [
-        -90,
-        30
+        -90.0,
+        30.0
       ],
-      "rotation": 3.141592653589793
+      "rotation": 3.1416,
+      "scale": 11.0
     },
     {
       "kind": "key",
       "id": "flis.key.siste",
       "position": [
-        -58,
-        56
+        -58.0,
+        56.0
       ],
       "opens": "siste"
+    },
+    {
+      "kind": "flis_prop",
+      "id": "flis.prop.vesica",
+      "position": [
+        -90.0,
+        56.0
+      ],
+      "prop": "vesica"
     }
   ]
 }

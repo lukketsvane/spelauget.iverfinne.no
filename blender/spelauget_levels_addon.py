@@ -178,6 +178,54 @@ SPAWN_POINT_KEY = 'spel_spawn_point'
 # the exporter skips them — they are NOT spawns, just visual scaffold.
 REF_KEY = 'spel_ref'
 
+# Per-kind GLB lookup so the addon can swap a plain-axes empty for a
+# real instance of the prop's mesh in the viewport. Paths mirror the
+# KIND_CONFIG urls in src/game/StaticGLB.tsx + the per-component GLB
+# urls in Car.tsx / Trilo.tsx / StoneHut.tsx / etc. Keep in sync if
+# a new prop's GLB lands.
+KIND_GLB = {
+    'glowing_purple_coral':   '/models/glowing_purple_coral.glb',
+    'neon_vascular_tree':     '/models/neon_vascular_tree.glb',
+    'purple_coral':           '/models/purple_coral.glb',
+    'purple_coral_alt':       '/models/purple_coral_alt.glb',
+    'purple_stone_cairn':     '/models/purple_stone_cairn.glb',
+    'tangled_root_sculpture': '/models/tangled_root_sculpture.glb',
+    'mythical_horse':         '/models/mythical_horse.glb',
+    'rock_stack':             '/models/rock_stack.glb',
+    'stone_hut':              '/models/stone_hut.glb',
+    'trilo':                  '/models/trilo.glb',
+    'giantess':               '/models/giantess_squat.glb',
+    'skate':                  '/models/skate.glb',
+    'car':                    '/models/car_01.glb',
+    'star_npc':               '/models/stjernekarakter.glb',
+    'boble_npc':              '/models/boblehovud.glb',
+}
+
+# flis_prop reads its `prop` field to pick between four GLBs. The
+# addon previews whichever one the spawn was authored with.
+FLIS_PROP_GLB = {
+    'figure_seated': '/flisverden/flis_figure_seated.glb',
+    'pillar':        '/flisverden/flis_pillar.glb',
+    'vesica':        '/flisverden/flis_vesica.glb',
+    'floor_tile':    '/flisverden/flis_floor_tile.glb',
+}
+
+# Per-kind default scale — mirrors the `scale = N` defaults inside each
+# game component (Giantess.tsx default 11, Trilo 1.5, etc.). The addon
+# applies these when the spawn JSON has no explicit `scale` field, so
+# the Blender preview matches what the game actually renders.
+KIND_DEFAULT_SCALE = {
+    'giantess':       11.0,
+    'crystal_altar':   1.6,
+    'skate':           2.5,
+    'trilo':           1.5,
+}
+
+# Player character GLB — rendered at the __spawnpoint_<world> empty so
+# the level designer sees the player's silhouette at their landing
+# spot. Mirrors src/game/config.ts PLAYER_MODEL_URL.
+PLAYER_GLB = '/models/sligo_01.glb'
+
 
 # --- helpers --------------------------------------------------------
 
@@ -211,6 +259,52 @@ def _try_load_image(project_root, tex_url):
         return None
 
 
+def _glb_url_for_spawn(spawn):
+    """Look up the GLB to preview for this spawn (or None)."""
+    kind = spawn.get('kind')
+    if kind == 'flis_prop':
+        prop = spawn.get('prop', 'vesica')
+        return FLIS_PROP_GLB.get(prop)
+    if kind == 'car':
+        # car.model can override the default car_01 → car_02 swap.
+        model = spawn.get('model')
+        if model == 'car_02':
+            return '/models/car_02.glb'
+    return KIND_GLB.get(kind)
+
+
+def _glb_lib_collection(project_root, glb_url):
+    """Load a GLB once into a hidden library collection and return it.
+    Subsequent calls for the same GLB return the cached collection so
+    every spawn of the same kind reuses one mesh in memory."""
+    if not project_root or not glb_url:
+        return None
+    name = f"_glb_lib_{glb_url}"
+    coll = bpy.data.collections.get(name)
+    if coll is not None:
+        return coll
+    abs_path = project_root / 'public' / glb_url.lstrip('/')
+    if not abs_path.exists():
+        return None
+    pre = set(bpy.data.objects)
+    try:
+        bpy.ops.import_scene.gltf(filepath=str(abs_path))
+    except Exception:
+        return None
+    new_objs = [o for o in bpy.data.objects if o not in pre]
+    if not new_objs:
+        return None
+    coll = bpy.data.collections.new(name)
+    # Move every imported object into the library collection and out
+    # of any scene collection — the library is referenced via instance
+    # empties, never linked directly into a view layer.
+    for o in new_objs:
+        for c in list(o.users_collection):
+            c.objects.unlink(o)
+        coll.objects.link(o)
+    return coll
+
+
 def _coll_for_world(scn):
     name = f"spawns_{scn.spel_world_name}"
     coll = bpy.data.collections.get(name)
@@ -225,8 +319,12 @@ def _create_spawn_empty(coll, spawn, project_root):
     kind = spawn['kind']
     pos = spawn['position']
 
+    # Asset preview priority: explicit texture → painted-card billboard;
+    # else known kind → real GLB instance; else plain axes.
     texture = spawn.get('texture')
     img = _try_load_image(project_root, texture)
+    glb_url = None if img is not None else _glb_url_for_spawn(spawn)
+    glb_lib = _glb_lib_collection(project_root, glb_url) if glb_url else None
 
     obj = bpy.data.objects.new(name, None)
     coll.objects.link(obj)
@@ -242,6 +340,14 @@ def _create_spawn_empty(coll, spawn, project_root):
         obj.empty_image_depth = 'DEFAULT'
         # Display the image at the spawn's authored height (or 4 m).
         obj.empty_display_size = float(spawn.get('height', 4.0))
+    elif glb_lib is not None:
+        # Instance the loaded GLB collection. The empty itself stays a
+        # plain transform; the rendered geometry comes from the
+        # referenced library collection, so memory cost is one mesh
+        # for an entire perimeter ring of 28 cairns.
+        obj.instance_type = 'COLLECTION'
+        obj.instance_collection = glb_lib
+        obj.empty_display_size = 0.5
     else:
         obj.empty_display_type = 'PLAIN_AXES'
         obj.empty_display_size = 1.5
@@ -249,8 +355,13 @@ def _create_spawn_empty(coll, spawn, project_root):
     obj.location = (float(pos[0]), float(pos[1]), 0.0)
     if 'rotation' in spawn:
         obj.rotation_euler[2] = float(spawn['rotation'])
+    # Explicit scale wins; otherwise fall back to the kind's runtime
+    # default so the preview reads the same size as in-game.
     if 'scale' in spawn:
         s = float(spawn['scale'])
+        obj.scale = (s, s, s)
+    elif kind in KIND_DEFAULT_SCALE:
+        s = KIND_DEFAULT_SCALE[kind]
         obj.scale = (s, s, s)
 
     obj['kind'] = kind
@@ -268,8 +379,21 @@ def _ensure_spawn_point(scn, sp):
     if obj is None:
         obj = bpy.data.objects.new(name, None)
         coll.objects.link(obj)
-    obj.empty_display_type = 'SPHERE'
-    obj.empty_display_size = 2.0
+
+    # Try to preview the player character GLB on top of the spawn
+    # marker so the level designer sees the character's silhouette at
+    # the correct landing spot. Falls back to a plain sphere empty if
+    # the GLB can't be loaded (e.g. file missing, repo path unset).
+    root = _project_root(scn)
+    lib = _glb_lib_collection(root, PLAYER_GLB)
+    if lib is not None:
+        obj.instance_type = 'COLLECTION'
+        obj.instance_collection = lib
+        obj.empty_display_size = 0.5
+    else:
+        obj.empty_display_type = 'SPHERE'
+        obj.empty_display_size = 2.0
+
     obj.location = (float(sp.get('x', 0)), float(sp.get('z', 0)), 0.0)
     obj[SPAWN_POINT_KEY] = True
     return obj

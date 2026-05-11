@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-const TILE_TEXTURE_URL = '/flis_tilable_texture.png';
+const TILE_TEXTURE_URL = '/flisverden/flis_tilable_texture.png';
 
 type Props = {
   id: string;

@@ -4,7 +4,7 @@ import { useMemo, useRef } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-const TILE_TEXTURE_URL = '/flis_tilable_texture.png';
+const TILE_TEXTURE_URL = '/flisverden/flis_tilable_texture.png';
 
 // Sunken swimming-pool prop. There are NO walls or pillars around the
 // pool — the player walks on the same wet tile floor the sculptures
