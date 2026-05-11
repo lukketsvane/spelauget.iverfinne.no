@@ -22,7 +22,7 @@ type TunerState = {
 // REGION_ATMOS map. Scene.tsx now reads from useTuner.fogByRegion
 // instead so the tuner panel can drive fog live without a code edit.
 const DEFAULT_FOG: Record<RegionId, FogConfig> = {
-  // Hagen: tighter near plane (15) so the spawn area immediately
+  // Hageverden: tighter near plane (15) so the spawn area immediately
   // reads with atmosphere; long far (200) keeps distant trail
   // markers readable instead of vanishing into a wall of fog.
   lysningen: { color: '#1a1230', near: 15, far: 200 },

@@ -9,7 +9,7 @@ import type { RegionId } from '@/game/regions';
 // old pause-menu Travel buttons — pressing 1..5 anywhere in-game
 // triggers the same cinematic fade-relocate-fade as before.
 //
-//   1 → lysningen (Hagen)
+//   1 → lysningen (Hageverden)
 //   2 → blod      (Blodverden)
 //   3 → geometri  (Flisverden)
 //   4 → siste     (Saltverden)

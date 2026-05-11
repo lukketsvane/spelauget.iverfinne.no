@@ -14,11 +14,11 @@ import { useSettings } from '@/store/settings';
 // pushable = whether the plant bends away from the player when nearby
 //   (true for soft bushes / grass, false for tree-sized plants).
 const PLANT_SOURCES = [
-  { url: '/plante_01.png', height: 2.4, wind: 0.7, pushable: true },
-  { url: '/plante_02.png', height: 3.0, wind: 0.6, pushable: true },
-  { url: '/plante_03.png', height: 4.2, wind: 0.2, pushable: false },
-  { url: '/plante_04.png', height: 4.0, wind: 0.35, pushable: false },
-  { url: '/plante_01.png', height: 2.2, wind: 0.8, pushable: true },
+  { url: '/hageverden/plante_01.png', height: 2.4, wind: 0.7, pushable: true },
+  { url: '/hageverden/plante_02.png', height: 3.0, wind: 0.6, pushable: true },
+  { url: '/hageverden/plante_03.png', height: 4.2, wind: 0.2, pushable: false },
+  { url: '/hageverden/plante_04.png', height: 4.0, wind: 0.35, pushable: false },
+  { url: '/hageverden/plante_01.png', height: 2.2, wind: 0.8, pushable: true },
 ] as const;
 
 const FACE_CAMERA_Y = Math.PI / 4;
@@ -43,14 +43,14 @@ type PlantUniforms = {
 };
 
 export default function Plants({ playerPosRef, exclusions }: Props) {
-  // Procedural plant chunks render only inside Hagen — the four
+  // Procedural plant chunks render only inside Hageverden — the four
   // chain destinations (Blodverden / Flisverden / Saltverden /
   // Speilverden) are intentionally empty blank slates per the
   // user's "tomme verdener bortsett fra første" brief. Hooks below
   // still run unconditionally to keep the call order stable; we
   // just early-return null at JSX time when the active region
-  // isn't Hagen.
-  const isHagen = useLevel((s) => s.currentRegionId === 'lysningen');
+  // isn't Hageverden.
+  const isHageverden = useLevel((s) => s.currentRegionId === 'lysningen');
   const textures = useTexture(PLANT_SOURCES.map((p) => p.url));
 
   useMemo(() => {
@@ -177,7 +177,7 @@ export default function Plants({ playerPosRef, exclusions }: Props) {
     });
   });
 
-  if (!isHagen) return null;
+  if (!isHageverden) return null;
 
   return (
     <group>

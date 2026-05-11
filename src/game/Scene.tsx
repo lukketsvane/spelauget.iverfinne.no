@@ -58,7 +58,7 @@ export default function Scene() {
   const setCanvasEl = useInput((s) => s.setCanvasEl);
   // Read the active region up front so the camera frustum effect
   // below can scale its ortho zoom per world (Flisverden runs at 5×
-  // scale and needs a much wider view than Hagen does).
+  // scale and needs a much wider view than Hageverden does).
   const regionId = useLevel((s) => s.currentRegionId);
   useEffect(() => {
     setCanvasEl(gl.domElement);
@@ -87,7 +87,7 @@ export default function Scene() {
   // No-plant bubbles around every NPC / prop so the digging character,
   // huts, rocks, etc. always have a clean ring of bare ground around
   // them. Recomputed when the active region's spawn list changes so
-  // a brand-new empty world doesn't carry over Hagen's exclusion
+  // a brand-new empty world doesn't carry over Hageverden's exclusion
   // bubbles.
   const plantExclusions = useMemo(() => {
     const spawns = WORLD_SPAWNS[regionId] ?? [];

@@ -1,4 +1,4 @@
-// Per-spawn dialogue tables for Hagen. Keyed by the spawn `id` in
+// Per-spawn dialogue tables for Hageverden. Keyed by the spawn `id` in
 // spawns.json — the loader in index.ts merges these into the
 // matching star_npc / boble_npc spawns at runtime.
 //
@@ -10,7 +10,7 @@
 
 import type { DialogueLine } from '@/store/dialogue';
 
-export const HAGEN_DIALOGUE: Record<string, DialogueLine[]> = {
+export const HAGEVERDEN_DIALOGUE: Record<string, DialogueLine[]> = {
   'lys.star.welcome': [
     { text: 'Stand still for a moment.' },
     {

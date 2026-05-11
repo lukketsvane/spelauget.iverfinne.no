@@ -201,7 +201,7 @@ function ControlsLegend() {
     ['Move', 'WASD / Arrows / Hold mouse'],
     ['Bow', 'E or Space'],
     ['Menu', 'Q or Esc'],
-    ['Travel', '1 Hagen · 2 Blod · 3 Flis · 4 Salt · 5 Kjeller'],
+    ['Travel', '1 Hage · 2 Blod · 3 Flis · 4 Salt · 5 Kjeller'],
     ['Tune', 'T'],
   ];
   return (

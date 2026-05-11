@@ -1,6 +1,6 @@
 // Spawn type definitions — one Spawn variant per kind of thing the
 // per-world spawn arrays can contain. Lives at /levels/types.ts so
-// every per-world file (hagen/index.ts, blodverden/index.ts, …) can
+// every per-world file (hageverden/index.ts, blodverden/index.ts, …) can
 // import these without pulling in the full LEVELS aggregator.
 
 import type { DialogueLine } from '@/store/dialogue';

@@ -10,7 +10,7 @@ running game on save (Next.js HMR picks up the JSON instantly).
 /blender/
   spelauget_levels_addon.py        ← install this in Blender (once)
   levels/                          ← put your .blend files here
-    hagen.blend
+    hageverden.blend
     blodverden.blend
     ...
 

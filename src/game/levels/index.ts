@@ -10,7 +10,7 @@
 import type { RegionId } from '../regions';
 import { BLODVERDEN_SPAWNS, BLODVERDEN_SPAWN_POINT } from './blodverden';
 import { FLISVERDEN_SPAWNS, FLISVERDEN_SPAWN_POINT } from './flisverden';
-import { HAGEN_SPAWNS, HAGEN_SPAWN_POINT } from './hagen';
+import { HAGEVERDEN_SPAWNS, HAGEVERDEN_SPAWN_POINT } from './hageverden';
 import { SALTVERDEN_SPAWNS, SALTVERDEN_SPAWN_POINT } from './saltverden';
 import { SPEILVERDEN_SPAWNS, SPEILVERDEN_SPAWN_POINT } from './speilverden';
 import type { LevelDefinition, Spawn } from './types';
@@ -25,7 +25,7 @@ export * from './types';
 // a legacy gradient row, not as a destination. (The pause-menu
 // Travel list filters it out via CHAIN_REGION_IDS.)
 export const WORLD_SPAWNS: Record<RegionId, Spawn[]> = {
-  lysningen: HAGEN_SPAWNS,
+  lysningen: HAGEVERDEN_SPAWNS,
   blod: BLODVERDEN_SPAWNS,
   geometri: FLISVERDEN_SPAWNS,
   siste: SALTVERDEN_SPAWNS,
@@ -34,11 +34,11 @@ export const WORLD_SPAWNS: Record<RegionId, Spawn[]> = {
 };
 
 // Per-region spawn POINTS — where the player physically appears on
-// arrival. Hagen overrides region centre with world origin so the
+// arrival. Hageverden overrides region centre with world origin so the
 // existing per-prop layout still frames correctly; the others use
 // their region centre directly.
 export const WORLD_SPAWN_POINTS: Record<RegionId, { x: number; z: number }> = {
-  lysningen: HAGEN_SPAWN_POINT,
+  lysningen: HAGEVERDEN_SPAWN_POINT,
   blod: BLODVERDEN_SPAWN_POINT,
   geometri: FLISVERDEN_SPAWN_POINT,
   siste: SALTVERDEN_SPAWN_POINT,
@@ -46,16 +46,16 @@ export const WORLD_SPAWN_POINTS: Record<RegionId, { x: number; z: number }> = {
   remnants: { x: 0, z: 90 },
 };
 
-// Legacy single-level shim. `LEVELS.world.spawns` returns Hagen's
+// Legacy single-level shim. `LEVELS.world.spawns` returns Hageverden's
 // content as a default — callers that still want the "everything in
-// one bucket" view get Hagen since that's the authored world. Newer
-// code should read WORLD_SPAWNS[regionId] instead.
+// one bucket" view get Hageverden since that's the authored world.
+// Newer code should read WORLD_SPAWNS[regionId] instead.
 export const LEVELS: Record<'world', LevelDefinition> = {
   world: {
     id: 'world',
     name: 'The World',
-    playerSpawn: HAGEN_SPAWN_POINT,
-    spawns: HAGEN_SPAWNS,
+    playerSpawn: HAGEVERDEN_SPAWN_POINT,
+    spawns: HAGEVERDEN_SPAWNS,
   },
 };
 

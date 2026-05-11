@@ -28,7 +28,7 @@ const REGIONS = {
   senter: { center: [90, 70] },
 };
 
-// --- Hagen perimeter ring (mirrors levels/helpers.ts) ---------------
+// --- Hageverden perimeter ring (mirrors levels/helpers.ts) ---------
 const WORLD_RADIUS = 120;
 const WORLD_SCALE = 2;
 const BOUNDARY_RING_R = WORLD_RADIUS - 4;
@@ -93,11 +93,11 @@ function applyWorldScale(spawns) {
   });
 }
 
-// --- HAGEN ----------------------------------------------------------
+// --- HAGEVERDEN -----------------------------------------------------
 // Authored in the 60-radius design frame; applyWorldScale (×2)
 // stretches to the runtime 120-radius frame at bake time.
 
-const HAGEN_BASE_SPAWNS = [
+const HAGEVERDEN_BASE_SPAWNS = [
   { kind: 'purple_coral', id: 'lys.coral.start.a', position: [-9, 4], scale: 1.3 },
   { kind: 'glowing_purple_coral', id: 'lys.coral.start.b', position: [10, 2], scale: 1.2 },
   { kind: 'purple_coral_alt', id: 'lys.coral.start.c', position: [8, -6], scale: 1.1 },
@@ -139,7 +139,7 @@ const HAGEN_BASE_SPAWNS = [
   trailCairn('trail.b', -2, 24),
 ];
 
-const HAGEN_WORLD_SPAWNS = [
+const HAGEVERDEN_WORLD_SPAWNS = [
   { kind: 'artifact', id: 'chain.artifact.lysningen', position: [-32, -55], region: 'lysningen' },
   {
     kind: 'portal',
@@ -149,7 +149,7 @@ const HAGEN_WORLD_SPAWNS = [
     requiredKey: 'blod',
     colorA: '#ff8a8a',
     colorB: '#5a0408',
-    texture: '/world-portal.gif',
+    texture: '/hageverden/world-portal.gif',
   },
   { kind: 'purple_stone_cairn', id: 'chain.trail.lys.a', position: [-5, -30], scale: 0.55 },
   { kind: 'purple_stone_cairn', id: 'chain.trail.lys.b', position: [5, -45], scale: 0.55 },
@@ -159,9 +159,9 @@ const HAGEN_WORLD_SPAWNS = [
   { kind: 'skate', id: 'skate.clearing.orbit', position: [0, -2], radius: 45, height: 5, period: 48, scale: 0.2 },
 ];
 
-const HAGEN = {
+const HAGEVERDEN = {
   spawnPoint: { x: 0, z: 0 },
-  spawns: [...applyWorldScale(HAGEN_BASE_SPAWNS), ...HAGEN_WORLD_SPAWNS, ...perimeterRing()],
+  spawns: [...applyWorldScale(HAGEVERDEN_BASE_SPAWNS), ...HAGEVERDEN_WORLD_SPAWNS, ...perimeterRing()],
 };
 
 // --- BLODVERDEN -----------------------------------------------------
@@ -273,7 +273,7 @@ const SPEILVERDEN = {
 
 // --- write ----------------------------------------------------------
 const targets = [
-  { name: 'hagen', data: HAGEN },
+  { name: 'hageverden', data: HAGEVERDEN },
   { name: 'blodverden', data: BLODVERDEN },
   { name: 'flisverden', data: FLISVERDEN },
   { name: 'saltverden', data: SALTVERDEN },

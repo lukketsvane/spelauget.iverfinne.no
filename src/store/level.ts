@@ -85,7 +85,7 @@ export const useLevel = create<LevelState>()(
         set({ transitionPhase: 'out' });
         setTimeout(() => {
           const region = getRegion(target);
-          // Per-world spawn points let Hagen keep its world-origin
+          // Per-world spawn points let Hageverden keep its world-origin
           // spawn while empty worlds drop the player at their region
           // centre.
           const spawn = WORLD_SPAWN_POINTS[region.id] ?? {

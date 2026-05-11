@@ -6,7 +6,11 @@ import * as THREE from 'three';
 import { applyGradientMap, getGradientTexture } from './gradients';
 import { makeRegionGradientTexture } from './regions';
 
-const GROUND_TEXTURES = ['/ny_bakke_01.png', '/ny_bakke_02.png', '/ny_bakke_03.png'];
+const GROUND_TEXTURES = [
+  '/hageverden/ny_bakke_01.png',
+  '/hageverden/ny_bakke_02.png',
+  '/hageverden/ny_bakke_03.png',
+];
 const GROUND_SIZE = 400;
 // World units per ground tile. The fragment shader picks a random one of
 // the three source textures and a random 90° rotation per tile so the

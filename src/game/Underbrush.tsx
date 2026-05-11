@@ -19,7 +19,7 @@ import type { PlantExclusion } from './Plants';
 // the player's feet to mimic stepping through grass, and tiles cast a
 // soft shadow onto the ground below.
 
-const URL = '/underbrush.png';
+const URL = '/hageverden/underbrush.png';
 const CHUNK_SIZE = 12;
 const CHUNK_RADIUS = 3;
 const TILE_SIZE = 6;
@@ -43,8 +43,8 @@ type Chunk = { key: string; placements: Placement[] };
 
 export default function Underbrush({ playerPosRef, exclusions }: Props) {
   // Same brief as Plants — only render the procedural ground-cover
-  // mat in Hagen. Other worlds stay empty.
-  const isHagen = useLevel((s) => s.currentRegionId === 'lysningen');
+  // mat in Hageverden. Other worlds stay empty.
+  const isHageverden = useLevel((s) => s.currentRegionId === 'lysningen');
   const tex = useTexture(URL);
 
   useEffect(() => {
@@ -225,7 +225,7 @@ export default function Underbrush({ playerPosRef, exclusions }: Props) {
     });
   });
 
-  if (!isHagen) return null;
+  if (!isHageverden) return null;
 
   return (
     <group>

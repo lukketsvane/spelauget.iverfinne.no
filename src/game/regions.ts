@@ -11,7 +11,7 @@ import type { Stop } from './gradients';
 // the menu's "Travel" buttons and the in-world portals teleport the
 // player directly to waypoint.center.
 
-// Five-world chain: hagen (lysningen) → blodverden (blod) →
+// Five-world chain: hageverden (lysningen) → blodverden (blod) →
 // flisverden (geometri) → saltverden (siste) → speilverden (senter).
 // `remnants` lingers as a legacy gradient row but no spawns target
 // it and the menu hides it from the Travel list. `stjerneengen` was
@@ -62,7 +62,7 @@ const LYSNINGEN_GROUND: Stop[] = [
   [0.7, '#7cc4ff'],
   [1.0, '#e8f4ff'],
 ];
-// Per user brief: Hagen plants are ALWAYS purple + blue, no pink.
+// Per user brief: Hageverden plants are ALWAYS purple + blue, no pink.
 // Previous palette injected hot magenta at the mid-low band; replaced
 // with deeper purple so the ramp stays inside the purple→blue→white
 // family at every luminance.
@@ -242,7 +242,7 @@ const SISTE_RELIC: Stop[] = [
 
 // --- Speilverden — iridescent violet / mirror-purple -----------------
 // Bright fuchsia-violet end of the spectrum so the destination world
-// reads as something otherworldly. Distinct from Hagen blue and the
+// reads as something otherworldly. Distinct from Hageverden blue and the
 // other chain hues. Brightens to a pearly white-violet at the top.
 const SENTER_GROUND: Stop[] = [
   [0.0, '#1a0828'],
@@ -289,7 +289,7 @@ const SENTER_RELIC: Stop[] = [
 export const REGIONS: RegionDef[] = [
   {
     id: 'lysningen',
-    name: 'Hagen',
+    name: 'Hageverden',
     center: [0, -30],
     // Tighter sigma than the Gaussian softmax used to default to —
     // each zone's palette now dominates ~95%+ within ~20 m of its

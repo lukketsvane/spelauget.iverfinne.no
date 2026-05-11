@@ -1,7 +1,7 @@
 // Stale-while-revalidate service worker. The shell + heavy assets are
 // pre-cached on install so the game can launch fully offline once visited
 // at least once. Bump CACHE_VERSION when the asset list changes.
-const CACHE_VERSION = 'spelauget-v22';
+const CACHE_VERSION = 'spelauget-v23';
 
 const PRECACHE = [
   '/',
@@ -33,26 +33,23 @@ const PRECACHE = [
   '/models/purple_coral_alt.glb',
   '/models/purple_stone_cairn.glb',
   '/models/tangled_root_sculpture.glb',
-  '/plante_01.png',
-  '/plante_02.png',
-  '/plante_03.png',
-  '/plante_04.png',
-  '/ny_bakke_01.png',
-  '/ny_bakke_02.png',
-  '/ny_bakke_03.png',
-  '/relic1 1.png',
-  '/relic2 1.png',
-  '/relic3 1.png',
-  '/relic4 1.png',
-  '/underbrush.png',
-  '/remnants/remnant_01.png',
-  '/remnants/remnant_02.png',
-  '/remnants/remnant_03.png',
-  '/remnants/remnant_04.png',
-  '/remnants/remnant_05.png',
-  '/remnants/remnant_06.png',
-  '/remnants/remnant_07.png',
-  '/remnants/remnant_08.png',
+  '/hageverden/plante_01.png',
+  '/hageverden/plante_02.png',
+  '/hageverden/plante_03.png',
+  '/hageverden/plante_04.png',
+  '/hageverden/ny_bakke_01.png',
+  '/hageverden/ny_bakke_02.png',
+  '/hageverden/ny_bakke_03.png',
+  '/hageverden/underbrush.png',
+  '/hageverden/world-portal.gif',
+  '/blodverden/remnant_01.png',
+  '/blodverden/remnant_02.png',
+  '/blodverden/remnant_03.png',
+  '/blodverden/remnant_04.png',
+  '/blodverden/remnant_05.png',
+  '/blodverden/remnant_06.png',
+  '/blodverden/remnant_07.png',
+  '/blodverden/remnant_08.png',
 ];
 
 self.addEventListener('install', (event) => {

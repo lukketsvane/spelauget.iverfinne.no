@@ -102,7 +102,7 @@ KIND_DEFAULTS = {
 }
 
 WORLD_ITEMS = [
-    ('hagen',       'Hagen',         'First world — the clearing'),
+    ('hageverden',  'Hageverden',    'First world — the clearing'),
     ('blodverden',  'Blodverden',    'Second world — red field'),
     ('flisverden',  'Flisverden',    'Third world — tile pool'),
     ('saltverden',  'Saltverden',    'Fourth world — salt flat'),
@@ -115,7 +115,7 @@ WORLD_ITEMS = [
 # kinds (key, portal, artifact, car_portal) are added implicitly on
 # top of each world's list — they tie worlds together in the chain.
 WORLD_KIND_ALLOWLIST = {
-    'hagen': [
+    'hageverden': [
         'star_npc', 'boble_npc',
         'stone_hut', 'rock_stack', 'trilo',
         'glowing_purple_coral', 'neon_vascular_tree',
@@ -153,7 +153,7 @@ CHAIN_KINDS = [
 # colour family the player will see at runtime. Pure viewport aid —
 # the in-game ground is still procedural, no upload.
 WORLD_REGION = {
-    'hagen':       ('lysningen', ( 0.0,  -30.0), (0.33, 0.38, 0.75)),
+    'hageverden':  ('lysningen', ( 0.0,  -30.0), (0.33, 0.38, 0.75)),
     'blodverden':  ('blod',      (-90.0, -50.0), (0.84, 0.20, 0.23)),
     'flisverden':  ('geometri',  (-90.0,  60.0), (0.49, 0.83, 0.82)),
     'saltverden':  ('siste',     ( 90.0, -50.0), (0.70, 0.77, 0.82)),
@@ -161,7 +161,7 @@ WORLD_REGION = {
 }
 
 # Player can never walk further than this from world origin. The ring
-# is just below the perimeter cairns in Hagen, so a wire circle of
+# is just below the perimeter cairns in Hageverden, so a wire circle of
 # this radius is a useful "edge of playable area" marker in Blender.
 WORLD_RADIUS = 120.0
 
@@ -566,6 +566,9 @@ class SPELAUGET_PT_panel(Panel):
         layout.separator()
         box = layout.box()
         box.label(text="Add Spawn", icon='ADD')
+        # Show which world's kinds are currently offered. Switching the
+        # World above re-filters the dropdown via _items_for_world.
+        box.label(text=f"(kinds for {scn.spel_world_name} only)", icon='FILTER')
         box.prop(scn, 'spel_add_kind', text='Kind')
         box.operator('spelauget.add_spawn', icon='PLUS')
 
@@ -654,7 +657,7 @@ def register():
     bpy.types.Scene.spel_world_name = EnumProperty(
         name="World",
         items=WORLD_ITEMS,
-        default='hagen',
+        default='hageverden',
     )
     bpy.types.Scene.spel_add_kind = EnumProperty(
         name="Kind",

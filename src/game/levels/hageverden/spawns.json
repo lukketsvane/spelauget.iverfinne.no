@@ -395,7 +395,7 @@
       "requiredKey": "blod",
       "colorA": "#ff8a8a",
       "colorB": "#5a0408",
-      "texture": "/world-portal.gif"
+      "texture": "/hageverden/world-portal.gif"
     },
     {
       "kind": "purple_stone_cairn",
