@@ -33,7 +33,10 @@ const DEFAULT_FOG: Record<RegionId, FogConfig> = {
   // edges still soften into the pink wash.
   geometri: { color: '#d8a8d4', near: 120, far: 200 },
   siste: { color: '#1a2c3c', near: 38, far: 100 },
-  senter: { color: '#241040', near: 30, far: 88 },
+  // Kjellerverden: pure white fog wraps the mirror world in a bright
+  // featureless haze, so the only thing the player sees clearly is
+  // their own reflection on the floor.
+  senter: { color: '#ffffff', near: 20, far: 70 },
   remnants: { color: '#1a1230', near: 40, far: 95 },
 };
 

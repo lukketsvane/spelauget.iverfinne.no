@@ -250,7 +250,10 @@ export default function Scene() {
           near: 40,
           far: 95,
         };
-        const tint = 0.6 + 0.8 * brightness;
+        // Kjellerverden locks its fog at the configured colour (true
+        // white) regardless of day-cycle brightness — the mirror world
+        // is meant to read as a featureless bright haze any time of day.
+        const tint = regionId === 'senter' ? 1.0 : 0.6 + 0.8 * brightness;
         dayColor.current.set(atmos.color).multiplyScalar(tint);
         fogRef.current.color.copy(dayColor.current);
         fogRef.current.near = atmos.near;
