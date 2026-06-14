@@ -17,6 +17,7 @@ next-env.d.ts
 **/[Ll]ogs/
 **/[Uu]ser[Ss]ettings/
 **/[Mm]emoryCaptures/
+**/[Uu][Ii][Ee]lements[Ss]chema/
 
 # Unity generated project files
 *.csproj
