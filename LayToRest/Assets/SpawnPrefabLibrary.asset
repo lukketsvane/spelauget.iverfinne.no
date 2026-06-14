@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b00dbf56588aee9499e33ebbfe84661f, type: 3}
+  m_Name: SpawnPrefabLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::LayToRest.World.SpawnPrefabLibrary
+  entries:
+  - kind: purple_stone_cairn
+    prefab: {fileID: 919132149155446097, guid: d8c1693daf3d04d40a3042a6a84bd115, type: 3}
+  - kind: tangled_root_sculpture
+    prefab: {fileID: 919132149155446097, guid: 5ac46cc84ab683e4089f7329f8b85aff, type: 3}
+  - kind: neon_vascular_tree
+    prefab: {fileID: 919132149155446097, guid: 453a5a3e068022b4d89324bf65206af5, type: 3}
+  - kind: purple_coral
+    prefab: {fileID: 919132149155446097, guid: dc46b8325e88e6f4c8e96346bba36ba5, type: 3}
+  - kind: purple_coral_alt
+    prefab: {fileID: 919132149155446097, guid: e3deeafbd2bd42c4eabd93c0b99b7ce5, type: 3}
+  - kind: glowing_purple_coral
+    prefab: {fileID: 919132149155446097, guid: 64aa4dc68776d504891edd6366e06b36, type: 3}
+  - kind: mythical_horse
+    prefab: {fileID: 919132149155446097, guid: 7976b604b06818d4d9e6aecb6d388be7, type: 3}
+  - kind: stone_hut
+    prefab: {fileID: 919132149155446097, guid: e4b8913ffb2eafc4a8a42569e78a8e93, type: 3}
+  - kind: trilo
+    prefab: {fileID: 919132149155446097, guid: 6f270d5930c31d54ab809f7bc161e947, type: 3}
+  - kind: skate
+    prefab: {fileID: 919132149155446097, guid: d197c4ffe7d23194aaaa750ae8974cf0, type: 3}
+  - kind: portal
+    prefab: {fileID: 919132149155446097, guid: b943758752e8eba42b6a86d168fd6469, type: 3}
+  - kind: giantess
+    prefab: {fileID: 919132149155446097, guid: 691f72e632334884f8b3f64ab39b25d9, type: 3}
+  - kind: rock_stack
+    prefab: {fileID: 919132149155446097, guid: d8c1693daf3d04d40a3042a6a84bd115, type: 3}
+  - kind: flis_prop:pillar
+    prefab: {fileID: 919132149155446097, guid: 27a14dd8c0aa5ba43b879c0ac1065d11, type: 3}
+  - kind: flis_prop:floor_tile
+    prefab: {fileID: 919132149155446097, guid: 991b2035c222dac40823a4ec68873fd3, type: 3}
+  - kind: car:car_01
+    prefab: {fileID: 919132149155446097, guid: 96b4442d4ea2cdc4ca55cfa9b9eed79f, type: 3}
+  - kind: car:car_02
+    prefab: {fileID: 919132149155446097, guid: 6d21c2097a866f8439416a27134e412d, type: 3}
+  - kind: boble_npc
+    prefab: {fileID: 8771091787928289351, guid: f708364c3e148604b8bc5b263bcd2437, type: 3}
+  - kind: star_npc
+    prefab: {fileID: 8771091787928289351, guid: 90112b84245ca694c9d147d587a7cfd2, type: 3}
